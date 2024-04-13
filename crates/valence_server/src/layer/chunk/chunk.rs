@@ -269,21 +269,21 @@ impl IntoBlock for BlockState {
     }
 }
 
-pub(super) const SECTION_BLOCK_COUNT: usize = 16 * 16 * 16;
-pub(super) const SECTION_BIOME_COUNT: usize = 4 * 4 * 4;
+pub const SECTION_BLOCK_COUNT: usize = 16 * 16 * 16;
+pub const SECTION_BIOME_COUNT: usize = 4 * 4 * 4;
 
 /// The maximum height of a chunk.
 pub const MAX_HEIGHT: u32 = 4096;
 
-pub(super) type BlockStateContainer =
+pub type BlockStateContainer =
     PalettedContainer<BlockState, SECTION_BLOCK_COUNT, { SECTION_BLOCK_COUNT / 2 }>;
 
-pub(super) type BiomeContainer =
+pub type BiomeContainer =
     PalettedContainer<BiomeId, SECTION_BIOME_COUNT, { SECTION_BIOME_COUNT / 2 }>;
 
 #[inline]
 #[track_caller]
-pub(super) fn check_block_oob(chunk: &impl Chunk, x: u32, y: u32, z: u32) {
+pub fn check_block_oob(chunk: &impl Chunk, x: u32, y: u32, z: u32) {
     assert!(
         x < 16 && y < chunk.height() && z < 16,
         "chunk block offsets of ({x}, {y}, {z}) are out of bounds"
@@ -292,7 +292,7 @@ pub(super) fn check_block_oob(chunk: &impl Chunk, x: u32, y: u32, z: u32) {
 
 #[inline]
 #[track_caller]
-pub(super) fn check_biome_oob(chunk: &impl Chunk, x: u32, y: u32, z: u32) {
+pub fn check_biome_oob(chunk: &impl Chunk, x: u32, y: u32, z: u32) {
     assert!(
         x < 4 && y < chunk.height() / 4 && z < 4,
         "chunk biome offsets of ({x}, {y}, {z}) are out of bounds"
@@ -301,7 +301,7 @@ pub(super) fn check_biome_oob(chunk: &impl Chunk, x: u32, y: u32, z: u32) {
 
 #[inline]
 #[track_caller]
-pub(super) fn check_section_oob(chunk: &impl Chunk, sect_y: u32) {
+pub fn check_section_oob(chunk: &impl Chunk, sect_y: u32) {
     assert!(
         sect_y < chunk.height() / 16,
         "chunk section offset of {sect_y} is out of bounds"

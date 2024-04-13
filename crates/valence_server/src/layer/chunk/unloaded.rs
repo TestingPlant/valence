@@ -12,14 +12,14 @@ use super::chunk::{
 
 #[derive(Clone, Default, Debug)]
 pub struct UnloadedChunk {
-    pub(super) sections: Vec<Section>,
-    pub(super) block_entities: BTreeMap<u32, Compound>,
+    pub sections: Vec<Section>,
+    pub block_entities: BTreeMap<u32, Compound>,
 }
 
 #[derive(Clone, Default, Debug)]
-pub(super) struct Section {
-    pub(super) block_states: BlockStateContainer,
-    pub(super) biomes: BiomeContainer,
+pub struct Section {
+    pub block_states: BlockStateContainer,
+    pub biomes: BiomeContainer,
 }
 
 impl UnloadedChunk {
