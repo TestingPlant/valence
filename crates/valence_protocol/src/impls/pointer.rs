@@ -67,7 +67,19 @@ where
     B: ToOwned + ?Sized,
     B::Owned: Decode<'a>,
 {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+    default fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
         B::Owned::decode(r).map(Cow::Owned)
+    }
+}
+
+impl<'a, 'b, B> Decode<'a> for Cow<'b, B>
+where
+    B: ToOwned + ?Sized,
+    B::Owned: Decode<'a>,
+    &'b B: Decode<'a>,
+{
+    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+        let decoded: &'b B = Decode::decode(r)?;
+        Ok(Cow::Borrowed(decoded))
     }
 }

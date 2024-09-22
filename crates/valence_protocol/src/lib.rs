@@ -1,3 +1,4 @@
+#![feature(specialization)]
 #![doc = include_str!("../README.md")]
 
 /// Used only by macros. Not public API.
