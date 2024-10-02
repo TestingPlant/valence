@@ -469,6 +469,7 @@ pub struct BlockPredicate<'a> {
     pub nbt: Option<Compound>,
 }
 
+<<<<<<< HEAD
 #[derive(Clone, PartialEq, Debug)]
 pub struct Property {
     pub name: String,
@@ -640,6 +641,12 @@ impl<'a> ItemComponent<'a> {
             ItemComponent::Lock { .. } => 65,
             ItemComponent::ContainerLoot { .. } => 66,
         }
+    }
+}
+
+impl From<ItemKind> for ItemStack<'_> {
+    fn from(item: ItemKind) -> Self {
+        Self::new(item, 1, None)
     }
 }
 
