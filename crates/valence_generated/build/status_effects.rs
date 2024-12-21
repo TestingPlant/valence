@@ -221,7 +221,7 @@ pub fn build() -> anyhow::Result<TokenStream> {
             /// Construct a effect from its snake_case name.
             ///
             /// Returns `None` if the name is invalid.
-            pub fn from_ident(id: Ident<&str>) -> Option<Self> {
+            pub fn from_ident(id: Ident) -> Option<Self> {
                 match id.as_str() {
                     #effect_from_ident_arms
                     _ => None
@@ -229,7 +229,7 @@ pub fn build() -> anyhow::Result<TokenStream> {
             }
 
             /// Gets the identifier of this effect.
-            pub const fn to_ident(self) -> Ident<&'static str> {
+            pub const fn to_ident(self) -> Ident {
                 match self {
                     #effect_to_ident_arms
                 }
@@ -237,7 +237,7 @@ pub fn build() -> anyhow::Result<TokenStream> {
 
             /// Gets the name of this effect.
             /// Same as [`StatusEffect::to_ident`], but doesn't take ownership.
-            pub const fn name(&self) -> Ident<&'static str> {
+            pub const fn name(&self) -> Ident {
                 match self {
                     #effect_to_ident_arms
                 }

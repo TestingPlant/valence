@@ -1,3 +1,4 @@
+use valence_bytes::CowUtf8Bytes;
 use valence_protocol::packets::play::CustomPayloadS2c;
 use valence_protocol::{ident, Bounded, Encode, VarInt, WritePacket};
 
@@ -21,8 +22,8 @@ impl<T: WritePacket> SetBrand for T {
         let _ = VarInt(brand.len() as _).encode(&mut buf);
         buf.extend_from_slice(brand.as_bytes());
         self.write_packet(&CustomPayloadS2c {
-            channel: ident!("minecraft:brand").into(),
-            data: Bounded(buf.as_slice().into()),
+            channel: ident!("minecraft:brand"),
+            data: Bounded(buf.into()),
         });
     }
 }

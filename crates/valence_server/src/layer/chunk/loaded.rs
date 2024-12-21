@@ -4,6 +4,7 @@ use std::mem;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use parking_lot::Mutex; // Using nonstandard mutex to avoid poisoning API.
+use valence_bytes::CowBytes;
 use valence_generated::block::{PropName, PropValue};
 use valence_nbt::{compound, Compound, Value};
 use valence_protocol::encode::{PacketWriter, WritePacket};
@@ -441,7 +442,7 @@ impl LoadedChunk {
             PacketWriter::new(&mut init_packets, info.threshold).write_packet(&ChunkDataS2c {
                 pos,
                 heightmaps: Cow::Owned(heightmaps),
-                blocks_and_biomes: &blocks_and_biomes,
+                blocks_and_biomes: CowBytes::Borrowed(&blocks_and_biomes),
                 block_entities: Cow::Owned(block_entities),
                 sky_light_mask: Cow::Borrowed(&[]),
                 block_light_mask: Cow::Borrowed(&[]),

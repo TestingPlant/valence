@@ -1,24 +1,25 @@
 use bitfield_struct::bitfield;
+use valence_bytes::CowUtf8Bytes;
 
-use crate::{BlockPos, Bounded, Decode, Encode, Packet, VarLong};
+use crate::{BlockPos, Bounded, Decode, DecodeBytes, DecodeBytesAuto, Encode, Packet, VarLong};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct UpdateStructureBlockC2s<'a> {
     pub position: BlockPos,
     pub action: Action,
     pub mode: Mode,
-    pub name: &'a str,
+    pub name: CowUtf8Bytes<'a>,
     pub offset_xyz: [i8; 3],
     pub size_xyz: [i8; 3],
     pub mirror: Mirror,
     pub rotation: Rotation,
-    pub metadata: Bounded<&'a str, 128>,
+    pub metadata: Bounded<CowUtf8Bytes<'a>, 128>,
     pub integrity: f32,
     pub seed: VarLong,
     pub flags: Flags,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum Action {
     UpdateData,
     SaveStructure,
@@ -26,7 +27,7 @@ pub enum Action {
     DetectSize,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum Mode {
     Save,
     Load,
@@ -34,14 +35,14 @@ pub enum Mode {
     Data,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum Mirror {
     None,
     LeftRight,
     FrontBack,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum Rotation {
     None,
     Clockwise90,
@@ -50,7 +51,7 @@ pub enum Rotation {
 }
 
 #[bitfield(u8)]
-#[derive(PartialEq, Eq, Encode, Decode)]
+#[derive(PartialEq, Eq, Encode, Decode, DecodeBytesAuto)]
 pub struct Flags {
     pub ignore_entities: bool,
     pub show_air: bool,

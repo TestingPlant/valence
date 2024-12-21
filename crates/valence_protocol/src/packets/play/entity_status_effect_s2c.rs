@@ -1,9 +1,9 @@
 use bitfield_struct::bitfield;
 use valence_nbt::Compound;
 
-use crate::{Decode, Encode, Packet, VarInt};
+use crate::{Decode, DecodeBytesAuto, Encode, Packet, VarInt};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct EntityStatusEffectS2c {
     pub entity_id: VarInt,
     pub effect_id: VarInt, // TODO: effect ID registry.
@@ -14,7 +14,7 @@ pub struct EntityStatusEffectS2c {
 }
 
 #[bitfield(u8)]
-#[derive(PartialEq, Eq, Encode, Decode)]
+#[derive(PartialEq, Eq, Encode, Decode, DecodeBytesAuto)]
 pub struct Flags {
     pub is_ambient: bool,
     pub show_particles: bool,

@@ -101,7 +101,7 @@ pub fn build() -> anyhow::Result<TokenStream> {
             /// Construct a sound from its snake_case name.
             ///
             /// Returns `None` if the name is invalid.
-            pub fn from_ident(id: Ident<&str>) -> Option<Self> {
+            pub fn from_ident(id: Ident) -> Option<Self> {
                 match id.as_str() {
                     #sound_from_ident_arms
                     _ => None
@@ -109,7 +109,7 @@ pub fn build() -> anyhow::Result<TokenStream> {
             }
 
             /// Gets the identifier of this sound.
-            pub const fn to_ident(self) -> Ident<&'static str> {
+            pub const fn to_ident(self) -> Ident {
                 match self {
                     #sound_to_ident_arms
                 }

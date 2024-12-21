@@ -8,7 +8,7 @@ use valence_server::Ident;
 pub struct AdvancementTabChangeEvent {
     pub client: Entity,
     /// If None then the client has closed advancement's tabs.
-    pub opened_tab: Option<Ident<String>>,
+    pub opened_tab: Option<Ident>,
 }
 
 pub(crate) fn handle_advancement_tab_change(

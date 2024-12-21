@@ -1,8 +1,8 @@
 use bitfield_struct::bitfield;
 
-use crate::{Decode, Encode, Packet};
+use crate::{Decode, DecodeBytesAuto, Encode, Packet};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct PlayerInputC2s {
     pub sideways: f32,
     pub forward: f32,
@@ -10,7 +10,7 @@ pub struct PlayerInputC2s {
 }
 
 #[bitfield(u8)]
-#[derive(PartialEq, Eq, Encode, Decode)]
+#[derive(PartialEq, Eq, Encode, Decode, DecodeBytesAuto)]
 pub struct PlayerInputFlags {
     pub jump: bool,
     pub unmount: bool,

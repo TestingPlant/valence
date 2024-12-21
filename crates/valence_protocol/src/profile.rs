@@ -1,12 +1,13 @@
 use base64::prelude::*;
 use serde::{Deserialize, Serialize};
 use url::Url;
+use valence_bytes::Utf8Bytes;
 
-use crate::{Decode, Encode};
+use crate::{DecodeBytes, Encode};
 
 /// A property from the game profile.
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Encode, Decode)]
-pub struct Property<S = String> {
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Encode, DecodeBytes)]
+pub struct Property<S = Utf8Bytes> {
     pub name: S,
     pub value: S,
     pub signature: Option<S>,

@@ -1,12 +1,13 @@
 use std::borrow::Cow;
 
+use valence_bytes::CowBytes;
 use valence_text::Text;
 
-use crate::{Decode, Encode, Packet};
+use crate::{DecodeBytes, Encode, Packet};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct ServerMetadataS2c<'a> {
     pub motd: Cow<'a, Text>,
-    pub icon: Option<&'a [u8]>,
+    pub icon: Option<CowBytes<'a>>,
     pub enforce_secure_chat: bool,
 }

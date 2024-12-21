@@ -1,19 +1,15 @@
-use std::collections::hash_map::Entry;
 use std::collections::BTreeSet;
 
-use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
 use rustc_hash::FxHashMap;
-use valence_entity::query::UpdateEntityQuery;
-use valence_entity::{EntityId, EntityLayerId, OldEntityLayerId, OldPosition, Position};
 use valence_protocol::encode::{PacketWriter, WritePacket};
 use valence_protocol::{BlockPos, ChunkPos, CompressionThreshold, Encode, Packet};
-use valence_server_common::{Despawned, Server};
+use valence_server_common::Server;
 
 use super::bvh::GetChunkPos;
 use super::message::Messages;
-use super::{Layer, UpdateLayersPostClientSet, UpdateLayersPreClientSet};
-use crate::client::Client;
+use super::Layer;
+// use crate::client::Client;
 
 /// A [`Component`] containing Minecraft entities.
 #[derive(Component, Debug)]
@@ -345,184 +341,184 @@ impl WritePacket for RadiusExceptWriter<'_> {
     }
 }
 
-pub(super) fn build(app: &mut App) {
-    app.add_systems(
-        PostUpdate,
-        (
-            (
-                change_entity_positions,
-                send_entity_update_messages,
-                send_layer_despawn_messages,
-                ready_entity_layers,
-            )
-                .chain()
-                .in_set(UpdateLayersPreClientSet),
-            unready_entity_layers.in_set(UpdateLayersPostClientSet),
-        ),
-    );
-}
-
-fn change_entity_positions(
-    entities: Query<
-        (
-            Entity,
-            &EntityId,
-            &Position,
-            &OldPosition,
-            &EntityLayerId,
-            &OldEntityLayerId,
-            Has<Despawned>,
-        ),
-        Or<(Changed<Position>, Changed<EntityLayerId>, With<Despawned>)>,
-    >,
-    mut layers: Query<&mut EntityLayer>,
-) {
-    for (entity, entity_id, pos, old_pos, layer_id, old_layer_id, despawned) in &entities {
-        let chunk_pos = ChunkPos::from(pos.0);
-        let old_chunk_pos = ChunkPos::from(old_pos.get());
-
-        if despawned {
-            // Entity was deleted. Remove it from the layer.
-
-            if let Ok(old_layer) = layers.get_mut(layer_id.0) {
-                let old_layer = old_layer.into_inner();
-
-                if let Entry::Occupied(mut old_cell) = old_layer.entities.entry(old_chunk_pos) {
-                    if old_cell.get_mut().remove(&entity) {
-                        old_layer.messages.send_local_infallible(
-                            LocalMsg::DespawnEntity {
-                                pos: old_chunk_pos,
-                                dest_layer: Entity::PLACEHOLDER,
-                            },
-                            |b| b.extend_from_slice(&entity_id.get().to_ne_bytes()),
-                        );
-
-                        if old_cell.get().is_empty() {
-                            old_cell.remove();
-                        }
-                    }
-                }
-            }
-        } else if old_layer_id != layer_id {
-            // Entity changed their layer. Remove it from old layer and insert it in the new
-            // layer.
-
-            if let Ok(old_layer) = layers.get_mut(old_layer_id.get()) {
-                let old_layer = old_layer.into_inner();
-
-                if let Entry::Occupied(mut old_cell) = old_layer.entities.entry(old_chunk_pos) {
-                    if old_cell.get_mut().remove(&entity) {
-                        old_layer.messages.send_local_infallible(
-                            LocalMsg::DespawnEntity {
-                                pos: old_chunk_pos,
-                                dest_layer: layer_id.0,
-                            },
-                            |b| b.extend_from_slice(&entity_id.get().to_ne_bytes()),
-                        );
-
-                        if old_cell.get().is_empty() {
-                            old_cell.remove();
-                        }
-                    }
-                }
-            }
-
-            if let Ok(mut layer) = layers.get_mut(layer_id.0) {
-                if layer.entities.entry(chunk_pos).or_default().insert(entity) {
-                    layer.messages.send_local_infallible(
-                        LocalMsg::SpawnEntity {
-                            pos: chunk_pos,
-                            src_layer: old_layer_id.get(),
-                        },
-                        |b| b.extend_from_slice(&entity.to_bits().to_ne_bytes()),
-                    );
-                }
-            }
-        } else if chunk_pos != old_chunk_pos {
-            // Entity changed their chunk position without changing layers. Remove it from
-            // old cell and insert it in the new cell.
-
-            if let Ok(mut layer) = layers.get_mut(layer_id.0) {
-                if let Entry::Occupied(mut old_cell) = layer.entities.entry(old_chunk_pos) {
-                    if old_cell.get_mut().remove(&entity) {
-                        layer.messages.send_local_infallible(
-                            LocalMsg::DespawnEntityTransition {
-                                pos: old_chunk_pos,
-                                dest_pos: chunk_pos,
-                            },
-                            |b| b.extend_from_slice(&entity_id.get().to_ne_bytes()),
-                        );
-                    }
-                }
-
-                if layer.entities.entry(chunk_pos).or_default().insert(entity) {
-                    layer.messages.send_local_infallible(
-                        LocalMsg::SpawnEntityTransition {
-                            pos: chunk_pos,
-                            src_pos: old_chunk_pos,
-                        },
-                        |b| b.extend_from_slice(&entity.to_bits().to_ne_bytes()),
-                    );
-                }
-            }
-        }
-    }
-}
-
-fn send_entity_update_messages(
-    entities: Query<(Entity, UpdateEntityQuery, Has<Client>), Without<Despawned>>,
-    mut layers: Query<&mut EntityLayer>,
-) {
-    for layer in layers.iter_mut() {
-        let layer = layer.into_inner();
-
-        for cell in layer.entities.values_mut() {
-            for &entity in cell.iter() {
-                if let Ok((entity, update, is_client)) = entities.get(entity) {
-                    let chunk_pos = ChunkPos::from(update.pos.0);
-
-                    // Send the update packets to all viewers. If the entity being updated is a
-                    // client, then we need to be careful to exclude the client itself from
-                    // receiving the update packets.
-                    let msg = if is_client {
-                        LocalMsg::PacketAtExcept {
-                            pos: chunk_pos,
-                            except: entity,
-                        }
-                    } else {
-                        LocalMsg::PacketAt { pos: chunk_pos }
-                    };
-
-                    layer.messages.send_local_infallible(msg, |b| {
-                        update.write_update_packets(PacketWriter::new(b, layer.threshold))
-                    });
-                } else {
-                    panic!(
-                        "Entity {entity:?} was not properly removed from entity layer. Did you \
-                         forget to use the `Despawned` component?"
-                    );
-                }
-            }
-        }
-    }
-}
-
-fn send_layer_despawn_messages(mut layers: Query<&mut EntityLayer, With<Despawned>>) {
-    for mut layer in &mut layers {
-        layer
-            .messages
-            .send_global_infallible(GlobalMsg::DespawnLayer, |_| {});
-    }
-}
-
-fn ready_entity_layers(mut layers: Query<&mut EntityLayer>) {
-    for mut layer in &mut layers {
-        layer.messages.ready();
-    }
-}
-
-fn unready_entity_layers(mut layers: Query<&mut EntityLayer>) {
-    for mut layer in &mut layers {
-        layer.messages.unready();
-    }
-}
+// pub(super) fn build(app: &mut App) {
+//     app.add_systems(
+//         PostUpdate,
+//         (
+//             (
+//                 change_entity_positions,
+//                 send_entity_update_messages,
+//                 send_layer_despawn_messages,
+//                 ready_entity_layers,
+//             )
+//                 .chain()
+//                 .in_set(UpdateLayersPreClientSet),
+//             unready_entity_layers.in_set(UpdateLayersPostClientSet),
+//         ),
+//     );
+// }
+//
+// fn change_entity_positions(
+//     entities: Query<
+//         (
+//             Entity,
+//             &EntityId,
+//             &Position,
+//             &OldPosition,
+//             &EntityLayerId,
+//             &OldEntityLayerId,
+//             Has<Despawned>,
+//         ),
+//         Or<(Changed<Position>, Changed<EntityLayerId>, With<Despawned>)>,
+//     >,
+//     mut layers: Query<&mut EntityLayer>,
+// ) {
+//     for (entity, entity_id, pos, old_pos, layer_id, old_layer_id, despawned)
+// in &entities {         let chunk_pos = ChunkPos::from(pos.0);
+//         let old_chunk_pos = ChunkPos::from(old_pos.get());
+//
+//         if despawned {
+//             // Entity was deleted. Remove it from the layer.
+//
+//             if let Ok(old_layer) = layers.get_mut(layer_id.0) {
+//                 let old_layer = old_layer.into_inner();
+//
+//                 if let Entry::Occupied(mut old_cell) =
+// old_layer.entities.entry(old_chunk_pos) {                     if
+// old_cell.get_mut().remove(&entity) {
+// old_layer.messages.send_local_infallible(
+// LocalMsg::DespawnEntity {                                 pos: old_chunk_pos,
+//                                 dest_layer: Entity::PLACEHOLDER,
+//                             },
+//                             |b| b.extend_from_slice(&entity_id.get().to_ne_bytes()),
+//                         );
+//
+//                         if old_cell.get().is_empty() {
+//                             old_cell.remove();
+//                         }
+//                     }
+//                 }
+//             }
+//         } else if old_layer_id != layer_id {
+//             // Entity changed their layer. Remove it from old layer and
+// insert it in the new             // layer.
+//
+//             if let Ok(old_layer) = layers.get_mut(old_layer_id.get()) {
+//                 let old_layer = old_layer.into_inner();
+//
+//                 if let Entry::Occupied(mut old_cell) =
+// old_layer.entities.entry(old_chunk_pos) {                     if
+// old_cell.get_mut().remove(&entity) {
+// old_layer.messages.send_local_infallible(
+// LocalMsg::DespawnEntity {                                 pos: old_chunk_pos,
+//                                 dest_layer: layer_id.0,
+//                             },
+//                             |b| b.extend_from_slice(&entity_id.get().to_ne_bytes()),
+//                         );
+//
+//                         if old_cell.get().is_empty() {
+//                             old_cell.remove();
+//                         }
+//                     }
+//                 }
+//             }
+//
+//             if let Ok(mut layer) = layers.get_mut(layer_id.0) {
+//                 if
+// layer.entities.entry(chunk_pos).or_default().insert(entity) {
+// layer.messages.send_local_infallible(
+// LocalMsg::SpawnEntity {                             pos: chunk_pos,
+//                             src_layer: old_layer_id.get(),
+//                         },
+//                         |b| b.extend_from_slice(&entity.to_bits().to_ne_bytes()),
+//                     );
+//                 }
+//             }
+//         } else if chunk_pos != old_chunk_pos {
+//             // Entity changed their chunk position without changing layers.
+// Remove it from             // old cell and insert it in the new cell.
+//
+//             if let Ok(mut layer) = layers.get_mut(layer_id.0) {
+//                 if let Entry::Occupied(mut old_cell) =
+// layer.entities.entry(old_chunk_pos) {                     if
+// old_cell.get_mut().remove(&entity) {
+// layer.messages.send_local_infallible(
+// LocalMsg::DespawnEntityTransition {                                 pos:
+// old_chunk_pos,                                 dest_pos: chunk_pos,
+//                             },
+//                             |b| b.extend_from_slice(&entity_id.get().to_ne_bytes()),
+//                         );
+//                     }
+//                 }
+//
+//                 if
+// layer.entities.entry(chunk_pos).or_default().insert(entity) {
+// layer.messages.send_local_infallible(
+// LocalMsg::SpawnEntityTransition {                             pos: chunk_pos,
+//                             src_pos: old_chunk_pos,
+//                         },
+//                         |b| b.extend_from_slice(&entity.to_bits().to_ne_bytes()),
+//                     );
+//                 }
+//             }
+//         }
+//     }
+// }
+//
+// fn send_entity_update_messages(
+//     entities: Query<(Entity, UpdateEntityQuery, Has<Client>),
+// Without<Despawned>>,     mut layers: Query<&mut EntityLayer>,
+// ) {
+//     for layer in layers.iter_mut() {
+//         let layer = layer.into_inner();
+//
+//         for cell in layer.entities.values_mut() {
+//             for &entity in cell.iter() {
+//                 if let Ok((entity, update, is_client)) = entities.get(entity)
+// {                     let chunk_pos = ChunkPos::from(update.pos.0);
+//
+//                     // Send the update packets to all viewers. If the entity
+// being updated is a                     // client, then we need to be careful
+// to exclude the client itself from                     // receiving the update
+// packets.                     let msg = if is_client {
+//                         LocalMsg::PacketAtExcept {
+//                             pos: chunk_pos,
+//                             except: entity,
+//                         }
+//                     } else {
+//                         LocalMsg::PacketAt { pos: chunk_pos }
+//                     };
+//
+//                     layer.messages.send_local_infallible(msg, |b| {
+//                         update.write_update_packets(PacketWriter::new(b,
+// layer.threshold))                     });
+//                 } else {
+//                     panic!(
+//                         "Entity {entity:?} was not properly removed from
+// entity layer. Did you \                          forget to use the
+// `Despawned` component?"                     );
+//                 }
+//             }
+//         }
+//     }
+// }
+//
+// fn send_layer_despawn_messages(mut layers: Query<&mut EntityLayer,
+// With<Despawned>>) {     for mut layer in &mut layers {
+//         layer
+//             .messages
+//             .send_global_infallible(GlobalMsg::DespawnLayer, |_| {});
+//     }
+// }
+//
+// fn ready_entity_layers(mut layers: Query<&mut EntityLayer>) {
+//     for mut layer in &mut layers {
+//         layer.messages.ready();
+//     }
+// }
+//
+// fn unready_entity_layers(mut layers: Query<&mut EntityLayer>) {
+//     for mut layer in &mut layers {
+//         layer.messages.unready();
+//     }
+// }

@@ -2,9 +2,10 @@ use std::io::Write;
 use std::mem;
 
 use anyhow::ensure;
+use bytes::Bytes;
 use derive_more::{Deref, DerefMut, From, Into};
 
-use crate::{Bounded, Decode, Encode};
+use crate::{Bounded, DecodeBytes, Encode};
 
 /// While [encoding], the contained slice is written directly to the output
 /// without any length prefix or metadata.
@@ -15,24 +16,24 @@ use crate::{Bounded, Decode, Encode};
 /// [encoding]: Encode
 /// [decoding]: Decode
 #[derive(
-    Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Debug, Deref, DerefMut, From, Into,
+    Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Debug, Deref, DerefMut, From, Into,
 )]
-pub struct RawBytes<'a>(pub &'a [u8]);
+pub struct RawBytes(pub Bytes);
 
-impl Encode for RawBytes<'_> {
+impl Encode for RawBytes {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
-        Ok(w.write_all(self.0)?)
+        Ok(w.write_all(&self.0)?)
     }
 }
 
-impl<'a> Decode<'a> for RawBytes<'a> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl DecodeBytes for RawBytes {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
         Ok(Self(mem::take(r)))
     }
 }
 
 /// Raises an encoding error if the inner slice is longer than `MAX_BYTES`.
-impl<const MAX_BYTES: usize> Encode for Bounded<RawBytes<'_>, MAX_BYTES> {
+impl<const MAX_BYTES: usize> Encode for Bounded<RawBytes, MAX_BYTES> {
     fn encode(&self, w: impl Write) -> anyhow::Result<()> {
         ensure!(
             self.len() <= MAX_BYTES,
@@ -46,14 +47,14 @@ impl<const MAX_BYTES: usize> Encode for Bounded<RawBytes<'_>, MAX_BYTES> {
 
 /// Raises a decoding error if the remainder of the input is larger than
 /// `MAX_BYTES`.
-impl<'a, const MAX_BYTES: usize> Decode<'a> for Bounded<RawBytes<'a>, MAX_BYTES> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl<const MAX_BYTES: usize> DecodeBytes for Bounded<RawBytes, MAX_BYTES> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
         ensure!(
             r.len() <= MAX_BYTES,
             "remainder of input exceeds max of {MAX_BYTES} bytes (got {} bytes)",
             r.len()
         );
 
-        Ok(Bounded(RawBytes::decode(r)?))
+        Ok(Bounded(RawBytes::decode_bytes(r)?))
     }
 }

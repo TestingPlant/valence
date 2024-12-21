@@ -1,7 +1,9 @@
-use crate::{Bounded, Decode, Encode, Packet, VarInt};
+use valence_bytes::CowUtf8Bytes;
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+use crate::{Bounded, DecodeBytes, Encode, Packet, VarInt};
+
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct RequestCommandCompletionsC2s<'a> {
     pub transaction_id: VarInt,
-    pub text: Bounded<&'a str, 32500>,
+    pub text: Bounded<CowUtf8Bytes<'a>, 32500>,
 }

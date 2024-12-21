@@ -1,9 +1,11 @@
-use crate::{Bounded, Decode, Encode, Packet, PacketState};
+use valence_bytes::{CowBytes, CowUtf8Bytes};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+use crate::{Bounded, DecodeBytes, Encode, Packet, PacketState};
+
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 #[packet(state = PacketState::Login)]
 pub struct LoginHelloS2c<'a> {
-    pub server_id: Bounded<&'a str, 20>,
-    pub public_key: &'a [u8],
-    pub verify_token: &'a [u8],
+    pub server_id: Bounded<CowUtf8Bytes<'a>, 20>,
+    pub public_key: CowBytes<'a>,
+    pub verify_token: CowBytes<'a>,
 }

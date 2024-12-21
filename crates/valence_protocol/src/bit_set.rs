@@ -1,11 +1,11 @@
 use std::fmt;
 use std::io::Write;
 
-use crate::{Decode, Encode};
+use crate::{Decode, DecodeBytesAuto, Encode};
 
 // TODO: when better const exprs are available, compute BYTE_COUNT from
 // BIT_COUNT.
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, DecodeBytesAuto)]
 pub struct FixedBitSet<const BIT_COUNT: usize, const BYTE_COUNT: usize>(pub [u8; BYTE_COUNT]);
 
 impl<const BIT_COUNT: usize, const BYTE_COUNT: usize> FixedBitSet<BIT_COUNT, BYTE_COUNT> {
@@ -40,10 +40,10 @@ impl<const BIT_COUNT: usize, const BYTE_COUNT: usize> Encode
     }
 }
 
-impl<const BIT_COUNT: usize, const BYTE_COUNT: usize> Decode<'_>
+impl<const BIT_COUNT: usize, const BYTE_COUNT: usize> Decode
     for FixedBitSet<BIT_COUNT, BYTE_COUNT>
 {
-    fn decode(r: &mut &'_ [u8]) -> anyhow::Result<Self> {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         check_counts(BIT_COUNT, BYTE_COUNT);
         Ok(Self(Decode::decode(r)?))
     }

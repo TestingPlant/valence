@@ -1,14 +1,16 @@
 use std::borrow::Cow;
 
-use crate::{Decode, Encode, Packet};
+use valence_bytes::CowUtf8Bytes;
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+use crate::{Decode, DecodeBytes, DecodeBytesAuto, Encode, Packet};
+
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct ChatSuggestionsS2c<'a> {
     pub action: ChatSuggestionsAction,
-    pub entries: Cow<'a, [&'a str]>,
+    pub entries: Cow<'a, [CowUtf8Bytes<'a>]>,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum ChatSuggestionsAction {
     Add,
     Remove,

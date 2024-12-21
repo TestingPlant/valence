@@ -9,10 +9,10 @@ use thiserror::Error;
 use valence_math::{DVec3, IVec3};
 
 use crate::direction::Direction;
-use crate::{Decode, Encode};
+use crate::{Decode, DecodeBytesAuto, Encode};
 
 /// Represents an absolute block position in world space.
-#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, DecodeBytesAuto)]
 pub struct BlockPos {
     pub x: i32,
     pub y: i32,
@@ -64,7 +64,7 @@ impl BlockPos {
 }
 
 #[bitfield(u64)]
-#[derive(PartialEq, Eq, PartialOrd, Ord, Encode, Decode)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Encode, Decode, DecodeBytesAuto)]
 pub struct PackedBlockPos {
     #[bits(12)]
     pub y: i32,
@@ -83,7 +83,7 @@ impl Encode for BlockPos {
     }
 }
 
-impl Decode<'_> for BlockPos {
+impl Decode for BlockPos {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         PackedBlockPos::decode(r).map(Into::into)
     }

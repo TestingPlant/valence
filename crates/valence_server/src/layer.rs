@@ -13,7 +13,6 @@ use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
 pub use chunk::ChunkLayer;
 pub use entity::EntityLayer;
-use valence_entity::{InitEntitiesSet, UpdateTrackedDataSet};
 use valence_protocol::encode::WritePacket;
 use valence_protocol::{BlockPos, ChunkPos, Ident};
 use valence_registry::{BiomeRegistry, DimensionTypeRegistry};
@@ -32,22 +31,22 @@ pub struct UpdateLayersPreClientSet;
 #[derive(SystemSet, Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct UpdateLayersPostClientSet;
 
-impl Plugin for LayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.configure_sets(
-            PostUpdate,
-            (
-                UpdateLayersPreClientSet
-                    .after(InitEntitiesSet)
-                    .after(UpdateTrackedDataSet),
-                UpdateLayersPostClientSet.after(UpdateLayersPreClientSet),
-            ),
-        );
-
-        chunk::build(app);
-        entity::build(app);
-    }
-}
+// impl Plugin for LayerPlugin {
+//     fn build(&self, app: &mut App) {
+//         app.configure_sets(
+//             PostUpdate,
+//             (
+//                 UpdateLayersPreClientSet
+//                     .after(InitEntitiesSet)
+//                     .after(UpdateTrackedDataSet),
+//                 UpdateLayersPostClientSet.after(UpdateLayersPreClientSet),
+//             ),
+//         );
+//
+//         chunk::build(app);
+//         entity::build(app);
+//     }
+// }
 
 /// Common functionality for layers. Notable implementors are [`ChunkLayer`] and
 /// [`EntityLayer`].
@@ -126,7 +125,7 @@ pub struct LayerBundle {
 impl LayerBundle {
     /// Returns a new layer bundle.
     pub fn new(
-        dimension_type_name: impl Into<Ident<String>>,
+        dimension_type_name: impl Into<Ident>,
         dimensions: &DimensionTypeRegistry,
         biomes: &BiomeRegistry,
         server: &Server,

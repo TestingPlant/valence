@@ -1,6 +1,6 @@
-use crate::{Decode, Encode, ItemStack, Packet, VarInt};
+use crate::{Decode, DecodeBytesAuto, Encode, ItemStack, Packet, VarInt};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct SetTradeOffersS2c {
     pub window_id: VarInt,
     pub trades: Vec<TradeOffer>,
@@ -10,7 +10,7 @@ pub struct SetTradeOffersS2c {
     pub can_restock: bool,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub struct TradeOffer {
     pub input_one: ItemStack,
     pub output_item: ItemStack,

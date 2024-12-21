@@ -1,7 +1,9 @@
-use crate::{Decode, Encode, Packet, PacketState};
+use valence_bytes::CowUtf8Bytes;
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+use crate::{DecodeBytes, Encode, Packet, PacketState};
+
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 #[packet(state = PacketState::Status)]
 pub struct QueryResponseS2c<'a> {
-    pub json: &'a str,
+    pub json: CowUtf8Bytes<'a>,
 }

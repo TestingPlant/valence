@@ -5,7 +5,7 @@ use byteorder::ReadBytesExt;
 use derive_more::{From, Into};
 use serde::{Deserialize, Serialize};
 
-use crate::{Decode, Encode};
+use crate::{Decode, DecodeBytesAuto, Encode};
 
 /// An `i64` encoded with variable length.
 #[derive(
@@ -22,6 +22,7 @@ use crate::{Decode, Encode};
     Into,
     Serialize,
     Deserialize,
+    DecodeBytesAuto,
 )]
 #[serde(transparent)]
 #[repr(transparent)]
@@ -113,7 +114,7 @@ impl Encode for VarLong {
     }
 }
 
-impl Decode<'_> for VarLong {
+impl Decode for VarLong {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let mut val = 0;
         for i in 0..Self::MAX_SIZE {

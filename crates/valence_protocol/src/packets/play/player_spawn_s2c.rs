@@ -1,7 +1,7 @@
 use uuid::Uuid;
 use valence_math::DVec3;
 
-use crate::{ByteAngle, Decode, Encode, Packet, VarInt};
+use crate::{ByteAngle, Decode, DecodeBytesAuto, Encode, Packet, VarInt};
 
 /// This packet is sent by the server when a player comes into visible range,
 /// not when a player joins.
@@ -16,7 +16,7 @@ use crate::{ByteAngle, Decode, Encode, Packet, VarInt};
 /// visible range. The client appears to handle it correctly.
 ///
 /// wiki : [Spawn Player](https://wiki.vg/Protocol#Spawn_Player)
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct PlayerSpawnS2c {
     /// A unique integer ID mostly used in the protocol to identify the player.
     pub entity_id: VarInt,

@@ -1,8 +1,10 @@
-use crate::{Bounded, Decode, Encode, FixedBitSet, Packet, VarInt};
+use valence_bytes::{CowFixedBytes, CowUtf8Bytes};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+use crate::{Bounded, DecodeBytes, Encode, FixedBitSet, Packet, VarInt};
+
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct CommandExecutionC2s<'a> {
-    pub command: Bounded<&'a str, 256>,
+    pub command: Bounded<CowUtf8Bytes<'a>, 256>,
     pub timestamp: u64,
     pub salt: u64,
     pub argument_signatures: Vec<CommandArgumentSignature<'a>>,
@@ -13,8 +15,8 @@ pub struct CommandExecutionC2s<'a> {
     pub acknowledgement: FixedBitSet<20, 3>,
 }
 
-#[derive(Copy, Clone, Debug, Encode, Decode)]
+#[derive(Clone, Debug, Encode, DecodeBytes)]
 pub struct CommandArgumentSignature<'a> {
-    pub argument_name: Bounded<&'a str, 16>,
-    pub signature: &'a [u8; 256],
+    pub argument_name: Bounded<CowUtf8Bytes<'a>, 16>,
+    pub signature: CowFixedBytes<'a, 256>,
 }

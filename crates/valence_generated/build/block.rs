@@ -1047,14 +1047,14 @@ pub fn build() -> anyhow::Result<TokenStream> {
                 }
             }
 
-            pub fn from_ident(ident: Ident<&str>) -> Option<Self> {
+            pub fn from_ident(ident: Ident) -> Option<Self> {
                 match ident.as_str() {
                     #block_entity_kind_from_ident_arms
                     _ => None
                 }
             }
 
-            pub fn ident(self) -> Ident<&'static str> {
+            pub fn ident(self) -> Ident {
                 match self {
                     #block_entity_kind_to_ident_arms
                 }

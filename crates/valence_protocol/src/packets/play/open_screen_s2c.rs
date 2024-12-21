@@ -2,16 +2,16 @@ use std::borrow::Cow;
 
 use valence_text::Text;
 
-use crate::{Decode, Encode, Packet, VarInt};
+use crate::{Decode, DecodeBytesAuto, Encode, Packet, VarInt};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct OpenScreenS2c<'a> {
     pub window_id: VarInt,
     pub window_type: WindowType,
     pub window_title: Cow<'a, Text>,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum WindowType {
     Generic9x1,
     Generic9x2,

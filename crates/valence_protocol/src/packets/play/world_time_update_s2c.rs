@@ -1,6 +1,6 @@
-use crate::{Decode, Encode, Packet};
+use crate::{Decode, DecodeBytesAuto, Encode, Packet};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct WorldTimeUpdateS2c {
     /// The age of the world in 1/20ths of a second.
     pub world_age: i64,

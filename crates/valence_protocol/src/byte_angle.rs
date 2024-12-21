@@ -2,10 +2,10 @@ use std::f32::consts::TAU;
 use std::fmt;
 use std::io::Write;
 
-use crate::{Decode, Encode};
+use crate::{Decode, DecodeBytesAuto, Encode};
 
 /// Represents an angle in steps of 1/256 of a full turn.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, DecodeBytesAuto)]
 pub struct ByteAngle(pub u8);
 
 impl ByteAngle {
@@ -44,7 +44,7 @@ impl Encode for ByteAngle {
     }
 }
 
-impl Decode<'_> for ByteAngle {
+impl Decode for ByteAngle {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         u8::decode(r).map(ByteAngle)
     }

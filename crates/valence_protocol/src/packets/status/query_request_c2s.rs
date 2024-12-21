@@ -1,5 +1,5 @@
-use crate::{Decode, Encode, Packet, PacketState};
+use crate::{Decode, DecodeBytesAuto, Encode, Packet, PacketState};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 #[packet(state = PacketState::Status)]
 pub struct QueryRequestC2s;

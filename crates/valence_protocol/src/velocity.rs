@@ -2,10 +2,10 @@ use std::fmt;
 
 use derive_more::{From, Into};
 
-use crate::{Decode, Encode};
+use crate::{Decode, DecodeBytesAuto, Encode};
 
 /// Quantized entity velocity.
-#[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, From, Into)]
+#[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, DecodeBytesAuto, From, Into)]
 pub struct Velocity(pub [i16; 3]);
 
 impl Velocity {

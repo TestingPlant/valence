@@ -1,8 +1,10 @@
-use crate::{BlockPos, Bounded, Decode, Encode, Packet};
+use valence_bytes::CowUtf8Bytes;
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+use crate::{BlockPos, Bounded, DecodeBytes, Encode, Packet};
+
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct UpdateSignC2s<'a> {
     pub position: BlockPos,
     pub is_front_text: bool,
-    pub lines: [Bounded<&'a str, 384>; 4],
+    pub lines: [Bounded<CowUtf8Bytes<'a>, 384>; 4],
 }

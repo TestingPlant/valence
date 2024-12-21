@@ -2,7 +2,7 @@ use std::io::Write;
 
 use valence_math::*;
 
-use crate::{Decode, Encode};
+use crate::{impl_decode_bytes_auto, Decode, Encode};
 
 impl Encode for Vec2 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -11,7 +11,7 @@ impl Encode for Vec2 {
     }
 }
 
-impl Decode<'_> for Vec2 {
+impl Decode for Vec2 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(Self {
             x: f32::decode(r)?,
@@ -19,6 +19,8 @@ impl Decode<'_> for Vec2 {
         })
     }
 }
+
+impl_decode_bytes_auto!(Vec2);
 
 impl Encode for Vec3 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -28,7 +30,7 @@ impl Encode for Vec3 {
     }
 }
 
-impl Decode<'_> for Vec3 {
+impl Decode for Vec3 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(Self {
             x: f32::decode(r)?,
@@ -38,6 +40,8 @@ impl Decode<'_> for Vec3 {
     }
 }
 
+impl_decode_bytes_auto!(Vec3);
+
 impl Encode for Vec3A {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
         self.x.encode(&mut w)?;
@@ -46,11 +50,13 @@ impl Encode for Vec3A {
     }
 }
 
-impl Decode<'_> for Vec3A {
+impl Decode for Vec3A {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(Self::new(f32::decode(r)?, f32::decode(r)?, f32::decode(r)?))
     }
 }
+
+impl_decode_bytes_auto!(Vec3A);
 
 impl Encode for IVec3 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -60,7 +66,7 @@ impl Encode for IVec3 {
     }
 }
 
-impl Decode<'_> for IVec3 {
+impl Decode for IVec3 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(Self {
             x: i32::decode(r)?,
@@ -69,6 +75,8 @@ impl Decode<'_> for IVec3 {
         })
     }
 }
+
+impl_decode_bytes_auto!(IVec3);
 
 impl Encode for Vec4 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -79,7 +87,7 @@ impl Encode for Vec4 {
     }
 }
 
-impl Decode<'_> for Vec4 {
+impl Decode for Vec4 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(Self::new(
             f32::decode(r)?,
@@ -90,6 +98,8 @@ impl Decode<'_> for Vec4 {
     }
 }
 
+impl_decode_bytes_auto!(Vec4);
+
 impl Encode for Quat {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
         self.x.encode(&mut w)?;
@@ -99,7 +109,7 @@ impl Encode for Quat {
     }
 }
 
-impl Decode<'_> for Quat {
+impl Decode for Quat {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(Self::from_xyzw(
             f32::decode(r)?,
@@ -110,6 +120,8 @@ impl Decode<'_> for Quat {
     }
 }
 
+impl_decode_bytes_auto!(Quat);
+
 impl Encode for DVec2 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
         self.x.encode(&mut w)?;
@@ -117,7 +129,7 @@ impl Encode for DVec2 {
     }
 }
 
-impl Decode<'_> for DVec2 {
+impl Decode for DVec2 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(Self {
             x: f64::decode(r)?,
@@ -125,6 +137,8 @@ impl Decode<'_> for DVec2 {
         })
     }
 }
+
+impl_decode_bytes_auto!(DVec2);
 
 impl Encode for DVec3 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -134,7 +148,7 @@ impl Encode for DVec3 {
     }
 }
 
-impl Decode<'_> for DVec3 {
+impl Decode for DVec3 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(Self {
             x: f64::decode(r)?,
@@ -143,6 +157,8 @@ impl Decode<'_> for DVec3 {
         })
     }
 }
+
+impl_decode_bytes_auto!(DVec3);
 
 impl Encode for DQuat {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -153,7 +169,7 @@ impl Encode for DQuat {
     }
 }
 
-impl Decode<'_> for DQuat {
+impl Decode for DQuat {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(Self::from_xyzw(
             f64::decode(r)?,
@@ -163,3 +179,5 @@ impl Decode<'_> for DQuat {
         ))
     }
 }
+
+impl_decode_bytes_auto!(DQuat);

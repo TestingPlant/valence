@@ -1,18 +1,18 @@
-use std::borrow::Cow;
 use std::io::Write;
 
+use valence_bytes::Bytes;
 use valence_ident::Ident;
 
 use crate::sound::SoundCategory;
-use crate::{Decode, Encode, Packet};
+use crate::{DecodeBytes, Encode, Packet};
 
 #[derive(Clone, PartialEq, Debug, Packet)]
-pub struct StopSoundS2c<'a> {
+pub struct StopSoundS2c {
     pub source: Option<SoundCategory>,
-    pub sound: Option<Ident<Cow<'a, str>>>,
+    pub sound: Option<Ident>,
 }
 
-impl Encode for StopSoundS2c<'_> {
+impl Encode for StopSoundS2c {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
         match (self.source, self.sound.as_ref()) {
             (Some(source), Some(sound)) => {
@@ -35,15 +35,15 @@ impl Encode for StopSoundS2c<'_> {
     }
 }
 
-impl<'a> Decode<'a> for StopSoundS2c<'a> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let (source, sound) = match i8::decode(r)? {
+impl DecodeBytes for StopSoundS2c {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let (source, sound) = match i8::decode_bytes(r)? {
             3 => (
-                Some(SoundCategory::decode(r)?),
-                Some(<Ident<Cow<'a, str>>>::decode(r)?),
+                Some(SoundCategory::decode_bytes(r)?),
+                Some(Ident::decode_bytes(r)?),
             ),
-            2 => (None, Some(<Ident<Cow<'a, str>>>::decode(r)?)),
-            1 => (Some(SoundCategory::decode(r)?), None),
+            2 => (None, Some(<Ident>::decode_bytes(r)?)),
+            1 => (Some(SoundCategory::decode_bytes(r)?), None),
             _ => (None, None),
         };
 

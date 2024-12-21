@@ -99,6 +99,7 @@ pub struct TextInner {
 #[serde(untagged)]
 pub enum TextContent {
     /// Normal text
+    // TODO: Use Utf8Bytes
     Text { text: Cow<'static, str> },
     /// A piece of text that will be translated on the client based on the
     /// client language. If no corresponding translation can be found, the
@@ -156,7 +157,7 @@ pub enum TextContent {
     },
     /// Displays NBT values from command storage.
     StorageNbt {
-        storage: Ident<Cow<'static, str>>,
+        storage: Ident,
         nbt: Cow<'static, str>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         interpret: Option<bool>,
@@ -212,7 +213,7 @@ pub enum HoverEvent {
     /// Shows an item.
     ShowItem {
         /// Resource identifier of the item
-        id: Ident<Cow<'static, str>>,
+        id: Ident,
         /// Number of the items in the stack
         count: Option<i32>,
         /// NBT information about the item (sNBT format)
@@ -225,7 +226,7 @@ pub enum HoverEvent {
         /// Resource identifier of the entity
         #[serde(rename = "type")]
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        kind: Option<Ident<Cow<'static, str>>>,
+        kind: Option<Ident>,
         /// Optional custom name for the entity
         #[serde(default, skip_serializing_if = "Option::is_none")]
         name: Option<Text>,
@@ -349,7 +350,7 @@ impl Text {
 
     /// Creates a text component for a command storage NBT tag.
     pub fn storage_nbt(
-        storage: impl Into<Ident<Cow<'static, str>>>,
+        storage: impl Into<Ident>,
         nbt: impl Into<Cow<'static, str>>,
         interpret: Option<bool>,
         separator: Option<Text>,

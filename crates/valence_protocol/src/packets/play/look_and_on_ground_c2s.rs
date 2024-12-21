@@ -1,6 +1,6 @@
-use crate::{packet_id, Decode, Encode, Packet};
+use crate::{packet_id, Decode, DecodeBytesAuto, Encode, Packet};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 #[packet(id = packet_id::LOOK_AND_ON_GROUND)]
 pub struct LookAndOnGroundC2s {
     pub yaw: f32,

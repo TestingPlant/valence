@@ -5,9 +5,9 @@ use bitfield_struct::bitfield;
 use derive_more::From;
 use thiserror::Error;
 
-use crate::{BiomePos, BlockPos, Decode, Encode};
+use crate::{BiomePos, BlockPos, Decode, DecodeBytesAuto, Encode};
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, DecodeBytesAuto)]
 pub struct ChunkSectionPos {
     pub x: i32,
     pub y: i32,
@@ -44,7 +44,7 @@ impl Encode for ChunkSectionPos {
     }
 }
 
-impl Decode<'_> for ChunkSectionPos {
+impl Decode for ChunkSectionPos {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         PackedChunkSectionPos::decode(r).map(Into::into)
     }
@@ -71,7 +71,7 @@ impl From<BiomePos> for ChunkSectionPos {
 }
 
 #[bitfield(u64)]
-#[derive(PartialEq, Eq, Ord, PartialOrd, Encode, Decode)]
+#[derive(PartialEq, Eq, Ord, PartialOrd, Encode, Decode, DecodeBytesAuto)]
 pub struct PackedChunkSectionPos {
     #[bits(20)]
     pub y: i32,

@@ -1,10 +1,11 @@
 use bitfield_struct::bitfield;
+use valence_bytes::CowUtf8Bytes;
 
-use crate::{Decode, Encode, Packet};
+use crate::{Decode, DecodeBytes, DecodeBytesAuto, Encode, Packet};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct ClientSettingsC2s<'a> {
-    pub locale: &'a str,
+    pub locale: CowUtf8Bytes<'a>,
     pub view_distance: u8,
     pub chat_mode: ChatMode,
     pub chat_colors: bool,
@@ -15,7 +16,7 @@ pub struct ClientSettingsC2s<'a> {
 }
 
 #[bitfield(u8)]
-#[derive(PartialEq, Eq, Encode, Decode)]
+#[derive(PartialEq, Eq, Encode, Decode, DecodeBytesAuto)]
 pub struct DisplayedSkinParts {
     pub cape: bool,
     pub jacket: bool,
@@ -27,7 +28,7 @@ pub struct DisplayedSkinParts {
     _pad: bool,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Default, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Default, Debug, Encode, Decode, DecodeBytes)]
 pub enum ChatMode {
     Enabled,
     CommandsOnly,
@@ -35,7 +36,7 @@ pub enum ChatMode {
     Hidden,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Default, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default, Encode, Decode, DecodeBytes)]
 pub enum MainArm {
     Left,
     #[default]

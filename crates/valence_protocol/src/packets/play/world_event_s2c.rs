@@ -1,6 +1,6 @@
-use crate::{BlockPos, Decode, Encode, Packet};
+use crate::{BlockPos, Decode, DecodeBytesAuto, Encode, Packet};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct WorldEventS2c {
     pub event: i32,
     pub location: BlockPos,

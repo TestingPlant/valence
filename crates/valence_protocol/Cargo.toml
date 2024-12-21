@@ -24,6 +24,7 @@ thiserror.workspace = true
 serde = { workspace = true, features = ["derive"] }
 byteorder.workspace = true
 uuid.workspace = true
+valence_bytes.workspace = true
 valence_ident.workspace = true
 base64.workspace = true
 url.workspace = true

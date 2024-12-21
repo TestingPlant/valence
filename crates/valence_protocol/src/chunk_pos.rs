@@ -2,10 +2,23 @@ use valence_math::DVec3;
 
 use crate::block_pos::BlockPos;
 use crate::chunk_section_pos::ChunkSectionPos;
-use crate::{BiomePos, Decode, Encode};
+use crate::{BiomePos, Decode, DecodeBytesAuto, Encode};
 
 /// The X and Z position of a chunk.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Hash, Debug, Encode, Decode)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Default,
+    Hash,
+    Debug,
+    Encode,
+    Decode,
+    DecodeBytesAuto,
+)]
 pub struct ChunkPos {
     /// The X position of the chunk.
     pub x: i32,

@@ -1,7 +1,7 @@
-use crate::{Decode, Encode, Packet, RawBytes, VarInt};
+use crate::{DecodeBytes, Encode, Packet, RawBytes, VarInt};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
-pub struct EntityTrackerUpdateS2c<'a> {
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
+pub struct EntityTrackerUpdateS2c {
     pub entity_id: VarInt,
-    pub tracked_values: RawBytes<'a>,
+    pub tracked_values: RawBytes,
 }

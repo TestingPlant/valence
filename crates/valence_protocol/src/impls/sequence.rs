@@ -1,11 +1,11 @@
 use std::io::Write;
 use std::mem::{self, MaybeUninit};
-use std::slice;
 
 use anyhow::ensure;
+use valence_bytes::{Bytes, CowBytes, CowFixedBytes, FixedBytes};
 
 use crate::impls::cautious_capacity;
-use crate::{Bounded, Decode, Encode, VarInt};
+use crate::{Bounded, Decode, DecodeBytes, Encode, VarInt};
 
 /// Like tuples, fixed-length arrays are encoded and decoded without a VarInt
 /// length prefix.
@@ -15,8 +15,8 @@ impl<T: Encode, const N: usize> Encode for [T; N] {
     }
 }
 
-impl<'a, T: Decode<'a>, const N: usize> Decode<'a> for [T; N] {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl<T: Decode, const N: usize> Decode for [T; N] {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         // TODO: rewrite using std::array::try_from_fn when stabilized?
 
         let mut data: [MaybeUninit<T>; N] = unsafe { MaybeUninit::uninit().assume_init() };
@@ -41,20 +41,47 @@ impl<'a, T: Decode<'a>, const N: usize> Decode<'a> for [T; N] {
     }
 }
 
-/// References to fixed-length arrays are not length prefixed.
-impl<'a, const N: usize> Decode<'a> for &'a [u8; N] {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        ensure!(
-            r.len() >= N,
-            "not enough data to decode u8 array of length {N}"
-        );
+impl<T: DecodeBytes, const N: usize> DecodeBytes for [T; N] {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        // TODO: rewrite using std::array::try_from_fn when stabilized?
 
-        let (res, remaining) = r.split_at(N);
-        let arr = <&[u8; N]>::try_from(res).unwrap();
-        *r = remaining;
-        Ok(arr)
+        let mut data: [MaybeUninit<T>; N] = unsafe { MaybeUninit::uninit().assume_init() };
+
+        for (i, elem) in data.iter_mut().enumerate() {
+            match T::decode_bytes(r) {
+                Ok(val) => {
+                    elem.write(val);
+                }
+                Err(e) => {
+                    // Call destructors for values decoded so far.
+                    for elem in &mut data[..i] {
+                        unsafe { elem.assume_init_drop() };
+                    }
+                    return Err(e);
+                }
+            }
+        }
+
+        // All values in `data` are initialized.
+        unsafe { Ok(mem::transmute_copy(&data)) }
     }
 }
+
+/// References to fixed-length arrays are not length prefixed.
+// TODO:
+//impl<'a, const N: usize> Decode<'a> for &'a [u8; N] {
+//    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+//        ensure!(
+//            r.len() >= N,
+//            "not enough data to decode u8 array of length {N}"
+//        );
+//
+//        let (res, remaining) = r.split_at(N);
+//        let arr = <&[u8; N]>::try_from(res).unwrap();
+//        *r = remaining;
+//        Ok(arr)
+//    }
+//}
 
 impl<T: Encode> Encode for [T] {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -71,7 +98,7 @@ impl<T: Encode> Encode for [T] {
     }
 }
 
-impl<T: Encode, const MAX_LEN: usize> Encode for Bounded<&'_ [T], MAX_LEN> {
+impl<T: Encode, const MAX_LEN: usize> Encode for Bounded<&[T], MAX_LEN> {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
         let len = self.len();
         ensure!(
@@ -86,9 +113,16 @@ impl<T: Encode, const MAX_LEN: usize> Encode for Bounded<&'_ [T], MAX_LEN> {
     }
 }
 
-impl<'a> Decode<'a> for &'a [u8] {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let len = VarInt::decode(r)?.0;
+impl Encode for Bytes {
+    fn encode(&self, w: impl Write) -> anyhow::Result<()> {
+        let bytes: &[u8] = self;
+        bytes.encode(w)
+    }
+}
+
+impl DecodeBytes for Bytes {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let len = VarInt::decode_bytes(r)?.0;
         ensure!(len >= 0, "attempt to decode slice with negative length");
         let len = len as usize;
         ensure!(
@@ -98,15 +132,57 @@ impl<'a> Decode<'a> for &'a [u8] {
             r.len()
         );
 
-        let (res, remaining) = r.split_at(len);
-        *r = remaining;
-        Ok(res)
+        Ok(r.split_to(len))
     }
 }
 
-impl<'a, const MAX_LEN: usize> Decode<'a> for Bounded<&'a [u8], MAX_LEN> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let res = <&[u8]>::decode(r)?;
+impl<const N: usize> Encode for FixedBytes<N> {
+    fn encode(&self, w: impl Write) -> anyhow::Result<()> {
+        <[u8; N]>::encode(self, w)
+    }
+}
+
+impl<const N: usize> DecodeBytes for FixedBytes<N> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        ensure!(
+            N <= r.len(),
+            "not enough data remaining to decode byte array (array len is {N}, but input len is \
+             {})",
+            r.len()
+        );
+
+        Ok(r.split_to(N).try_into()?)
+    }
+}
+
+impl<'a> Encode for CowBytes<'a> {
+    fn encode(&self, w: impl Write) -> anyhow::Result<()> {
+        let bytes: &[u8] = self;
+        bytes.encode(w)
+    }
+}
+
+impl<'a> DecodeBytes for CowBytes<'a> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        Bytes::decode_bytes(r).map(Self::Owned)
+    }
+}
+
+impl<'a, const N: usize> Encode for CowFixedBytes<'a, N> {
+    fn encode(&self, w: impl Write) -> anyhow::Result<()> {
+        <[u8; N]>::encode(self, w)
+    }
+}
+
+impl<'a, const N: usize> DecodeBytes for CowFixedBytes<'a, N> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        FixedBytes::decode_bytes(r).map(Self::Owned)
+    }
+}
+
+impl<const MAX_LEN: usize> DecodeBytes for Bounded<Bytes, MAX_LEN> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let res = Bytes::decode_bytes(r)?;
 
         ensure!(
             res.len() <= MAX_LEN,
@@ -118,14 +194,11 @@ impl<'a, const MAX_LEN: usize> Decode<'a> for Bounded<&'a [u8], MAX_LEN> {
     }
 }
 
-impl<'a> Decode<'a> for &'a [i8] {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let bytes = <&[u8]>::decode(r)?;
+impl<'a, const MAX_LEN: usize> DecodeBytes for Bounded<CowBytes<'a>, MAX_LEN> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let res = <Bounded<Bytes, MAX_LEN>>::decode_bytes(r)?;
 
-        // SAFETY: i8 and u8 have the same layout.
-        let bytes = unsafe { slice::from_raw_parts(bytes.as_ptr() as *const i8, bytes.len()) };
-
-        Ok(bytes)
+        Ok(Bounded(res.0.into()))
     }
 }
 
@@ -135,8 +208,8 @@ impl<T: Encode> Encode for Vec<T> {
     }
 }
 
-impl<'a, T: Decode<'a>> Decode<'a> for Vec<T> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl<T: Decode> Decode for Vec<T> {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let len = VarInt::decode(r)?.0;
         ensure!(len >= 0, "attempt to decode Vec with negative length");
         let len = len as usize;
@@ -151,8 +224,24 @@ impl<'a, T: Decode<'a>> Decode<'a> for Vec<T> {
     }
 }
 
-impl<'a, T: Decode<'a>, const MAX_LEN: usize> Decode<'a> for Bounded<Vec<T>, MAX_LEN> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl<T: DecodeBytes> DecodeBytes for Vec<T> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let len = VarInt::decode_bytes(r)?.0;
+        ensure!(len >= 0, "attempt to decode Vec with negative length");
+        let len = len as usize;
+
+        let mut vec = Vec::with_capacity(cautious_capacity::<T>(len));
+
+        for _ in 0..len {
+            vec.push(T::decode_bytes(r)?);
+        }
+
+        Ok(vec)
+    }
+}
+
+impl<T: Decode, const MAX_LEN: usize> Decode for Bounded<Vec<T>, MAX_LEN> {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let len = VarInt::decode(r)?.0;
         ensure!(len >= 0, "attempt to decode Vec with negative length");
         let len = len as usize;
@@ -172,14 +261,47 @@ impl<'a, T: Decode<'a>, const MAX_LEN: usize> Decode<'a> for Bounded<Vec<T>, MAX
     }
 }
 
-impl<'a, T: Decode<'a>> Decode<'a> for Box<[T]> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl<T: DecodeBytes, const MAX_LEN: usize> DecodeBytes for Bounded<Vec<T>, MAX_LEN> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let len = VarInt::decode_bytes(r)?.0;
+        ensure!(len >= 0, "attempt to decode Vec with negative length");
+        let len = len as usize;
+
+        ensure!(
+            len <= MAX_LEN,
+            "length of Vec exceeds max of {MAX_LEN} (got {len})"
+        );
+
+        let mut vec = Vec::with_capacity(len);
+
+        for _ in 0..len {
+            vec.push(T::decode_bytes(r)?);
+        }
+
+        Ok(Bounded(vec))
+    }
+}
+
+impl<T: Decode> Decode for Box<[T]> {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(Vec::decode(r)?.into_boxed_slice())
     }
 }
 
-impl<'a, T: Decode<'a>, const MAX_LEN: usize> Decode<'a> for Bounded<Box<[T]>, MAX_LEN> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl<T: DecodeBytes> DecodeBytes for Box<[T]> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        Ok(Vec::decode_bytes(r)?.into_boxed_slice())
+    }
+}
+
+impl<T: Decode, const MAX_LEN: usize> Decode for Bounded<Box<[T]>, MAX_LEN> {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(Bounded::<Vec<_>, MAX_LEN>::decode(r)?.map_into())
+    }
+}
+
+impl<T: DecodeBytes, const MAX_LEN: usize> DecodeBytes for Bounded<Box<[T]>, MAX_LEN> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        Ok(Bounded::<Vec<_>, MAX_LEN>::decode_bytes(r)?.map_into())
     }
 }

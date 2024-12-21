@@ -1,4 +1,4 @@
-#![feature(specialization)]
+#![feature(substr_range)]
 #![doc = include_str!("../README.md")]
 #![deny(
     rustdoc::broken_intra_doc_links,
@@ -22,9 +22,10 @@
 #[doc(hidden)]
 pub mod __private {
     pub use anyhow::{anyhow, bail, ensure, Context, Result};
+    pub use bytes::Bytes;
 
     pub use crate::var_int::VarInt;
-    pub use crate::{Decode, Encode, Packet};
+    pub use crate::{decode_bytes_auto, Decode, DecodeBytes, Encode, Packet};
 }
 
 // This allows us to use our own proc macros internally.
@@ -38,7 +39,7 @@ mod bounded;
 mod byte_angle;
 pub mod chunk_pos;
 pub mod chunk_section_pos;
-pub mod decode;
+// pub mod decode;
 mod difficulty;
 mod direction;
 pub mod encode;
@@ -57,7 +58,7 @@ mod velocity;
 
 use std::io::Write;
 
-use anyhow::Context;
+use anyhow::{ensure, Context};
 pub use array::FixedArray;
 pub use biome_pos::BiomePos;
 pub use bit_set::FixedBitSet;
@@ -65,9 +66,10 @@ pub use block::{BlockKind, BlockState};
 pub use block_pos::BlockPos;
 pub use bounded::Bounded;
 pub use byte_angle::ByteAngle;
+use bytes::Bytes;
 pub use chunk_pos::ChunkPos;
 pub use chunk_section_pos::ChunkSectionPos;
-pub use decode::PacketDecoder;
+// pub use decode::PacketDecoder;
 use derive_more::{From, Into};
 pub use difficulty::Difficulty;
 pub use direction::Direction;
@@ -84,7 +86,7 @@ pub use sound::Sound;
 pub use text::Text;
 pub use valence_generated::{block, packet_id, status_effects};
 pub use valence_ident::Ident;
-pub use valence_protocol_macros::{Decode, Encode, Packet};
+pub use valence_protocol_macros::{Decode, DecodeBytes, DecodeBytesAuto, Encode, Packet};
 pub use var_int::VarInt;
 pub use var_long::VarLong;
 pub use velocity::Velocity;
@@ -195,7 +197,7 @@ pub trait Encode {
     /// specialization is unavailable in stable Rust at the time of writing,
     /// we must make the slice specialization part of this trait.
     ///
-    /// [`write_all`]: Write::write_all
+    /// [`write_all`]: Write:write_all
     fn encode_slice(slice: &[Self], mut w: impl Write) -> anyhow::Result<()>
     where
         Self: Sized,
@@ -210,9 +212,6 @@ pub trait Encode {
 
 /// The `Decode` trait allows objects to be read from the Minecraft protocol. It
 /// is the inverse of [`Encode`].
-///
-/// `Decode` is parameterized by a lifetime. This allows the decoded value to
-/// borrow data from the byte slice it was read from.
 ///
 /// # Deriving
 ///
@@ -259,12 +258,60 @@ pub trait Encode {
 ///
 /// [macro]: valence_protocol_macros::Decode
 /// [`VarInt`]: var_int::VarInt
-pub trait Decode<'a>: Sized {
+pub trait Decode: DecodeBytes + Sized {
     /// Reads this object from the provided byte slice.
     ///
     /// Implementations of `Decode` are expected to shrink the slice from the
     /// front as bytes are read.
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self>;
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self>;
+}
+
+pub trait DecodeBytes: Sized {
+    /// Reads this object from the provided [`bytes::Bytes`].
+    ///
+    /// Implementations of `Decode` are expected to shrink the slice from the
+    /// front as bytes are read.
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self>;
+}
+
+/// Implement [`DecodeBytes`] on a type that already impleemnts [`Decode`]
+macro_rules! impl_decode_bytes_auto {
+    ($t:ty) => {
+        impl $crate::DecodeBytes for $t {
+            fn decode_bytes(r: &mut $crate::__private::Bytes) -> $crate::__private::Result<Self> {
+                $crate::decode_bytes_auto(r)
+            }
+        }
+    };
+}
+
+pub(crate) use impl_decode_bytes_auto;
+
+pub fn decode_bytes_auto<T: Decode>(r: &mut Bytes) -> anyhow::Result<T> {
+    let mut slice: &[u8] = r;
+    let value = T::decode(&mut slice);
+    *r = r.slice_ref(slice);
+    value
+}
+
+/// Helper function to decode a string from data without requiring
+/// [`valence_bytes::Bytes`]
+pub fn decode_str<'a>(r: &mut &'a [u8]) -> anyhow::Result<&'a str> {
+    let len = VarInt::decode(r)?.0;
+    ensure!(len >= 0, "attempt to decode string with negative length");
+    let len = len as usize;
+    ensure!(
+        len <= r.len(),
+        "not enough data remaining ({} bytes) to decode string of {len} bytes",
+        r.len()
+    );
+
+    let (res, remaining) = r.split_at(len);
+    let res = std::str::from_utf8(res)?;
+
+    *r = remaining;
+
+    Ok(res)
 }
 
 /// Types considered to be Minecraft packets.
@@ -396,7 +443,7 @@ mod tests {
         e: f64,
         f: BlockPos,
         g: Hand,
-        h: Ident<Cow<'a, str>>,
+        h: Ident,
         i: ItemStack,
         j: Text,
         k: VarInt,

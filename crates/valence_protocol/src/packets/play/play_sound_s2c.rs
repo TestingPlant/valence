@@ -1,11 +1,11 @@
 use valence_math::IVec3;
 
 use crate::sound::{SoundCategory, SoundId};
-use crate::{Decode, Encode, Packet};
+use crate::{DecodeBytes, Encode, Packet};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
-pub struct PlaySoundS2c<'a> {
-    pub id: SoundId<'a>,
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
+pub struct PlaySoundS2c {
+    pub id: SoundId,
     pub category: SoundCategory,
     pub position: IVec3,
     pub volume: f32,

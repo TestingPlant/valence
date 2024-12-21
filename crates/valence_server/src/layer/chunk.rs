@@ -41,7 +41,7 @@ pub struct ChunkLayer {
 
 /// Chunk layer information.
 pub(crate) struct ChunkLayerInfo {
-    dimension_type_name: Ident<String>,
+    dimension_type_name: Ident,
     height: u32,
     min_y: i32,
     biome_registry_len: usize,
@@ -127,14 +127,14 @@ impl ChunkLayer {
     /// Creates a new chunk layer.
     #[track_caller]
     pub fn new(
-        dimension_type_name: impl Into<Ident<String>>,
+        dimension_type_name: impl Into<Ident>,
         dimensions: &DimensionTypeRegistry,
         biomes: &BiomeRegistry,
         server: &Server,
     ) -> Self {
         let dimension_type_name = dimension_type_name.into();
 
-        let dim = &dimensions[dimension_type_name.as_str_ident()];
+        let dim = &dimensions[dimension_type_name.clone()];
 
         assert!(
             (0..MAX_HEIGHT as i32).contains(&dim.height),
@@ -156,8 +156,8 @@ impl ChunkLayer {
     }
 
     /// The name of the dimension this chunk layer is using.
-    pub fn dimension_type_name(&self) -> Ident<&str> {
-        self.info.dimension_type_name.as_str_ident()
+    pub fn dimension_type_name(&self) -> Ident {
+        self.info.dimension_type_name.clone()
     }
 
     /// The height of this instance's dimension.

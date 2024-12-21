@@ -6,7 +6,7 @@ use derive_more::{Deref, DerefMut, From, Into};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{Decode, Encode};
+use crate::{Decode, DecodeBytesAuto, Encode};
 
 /// An `i32` encoded with variable length.
 #[derive(
@@ -25,6 +25,7 @@ use crate::{Decode, Encode};
     Into,
     Serialize,
     Deserialize,
+    DecodeBytesAuto,
 )]
 #[serde(transparent)]
 #[repr(transparent)]
@@ -95,7 +96,7 @@ impl Encode for VarInt {
     }
 }
 
-impl Decode<'_> for VarInt {
+impl Decode for VarInt {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let mut val = 0;
         for i in 0..Self::MAX_SIZE {

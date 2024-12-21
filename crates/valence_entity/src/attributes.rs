@@ -388,7 +388,7 @@ pub(crate) struct TrackedAttributeModifier {
 
 impl TrackedEntityProperty {
     /// Converts to an [`AttributeProperty`]s.
-    fn to_property(&self) -> AttributeProperty<'static> {
+    fn to_property(&self) -> AttributeProperty {
         AttributeProperty {
             key: Ident::new(self.key.clone()).unwrap(),
             value: self.value,
@@ -421,7 +421,7 @@ impl TrackedEntityAttributes {
     }
 
     /// Returns the properties turned into a [`Vec`] of [`AttributeProperty`]s.
-    pub fn get_properties(&self) -> Vec<AttributeProperty<'static>> {
+    pub fn get_properties(&self) -> Vec<AttributeProperty> {
         self.modified
             .iter()
             .map(|(_, property)| property.to_property())

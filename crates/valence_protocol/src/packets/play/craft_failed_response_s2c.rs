@@ -1,11 +1,9 @@
-use std::borrow::Cow;
-
 use valence_ident::Ident;
 
-use crate::{Decode, Encode, Packet};
+use crate::{DecodeBytes, Encode, Packet};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
-pub struct CraftFailedResponseS2c<'a> {
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
+pub struct CraftFailedResponseS2c {
     pub window_id: u8,
-    pub recipe: Ident<Cow<'a, str>>,
+    pub recipe: Ident,
 }

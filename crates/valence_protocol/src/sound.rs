@@ -1,24 +1,19 @@
-use std::borrow::Cow;
 use std::io::Write;
 
+use bytes::Bytes;
 pub use valence_generated::sound::Sound;
 use valence_ident::Ident;
 
 use crate::var_int::VarInt;
-use crate::{Decode, Encode};
+use crate::{Decode, DecodeBytes, DecodeBytesAuto, Encode};
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum SoundId<'a> {
-    Direct {
-        id: Ident<Cow<'a, str>>,
-        range: Option<f32>,
-    },
-    Reference {
-        id: VarInt,
-    },
+pub enum SoundId {
+    Direct { id: Ident, range: Option<f32> },
+    Reference { id: VarInt },
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum SoundCategory {
     Master,
     Music,
@@ -32,7 +27,7 @@ pub enum SoundCategory {
     Voice,
 }
 
-impl Encode for SoundId<'_> {
+impl Encode for SoundId {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
         match self {
             SoundId::Direct { id, range } => {
@@ -47,14 +42,14 @@ impl Encode for SoundId<'_> {
     }
 }
 
-impl<'a> Decode<'a> for SoundId<'a> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let i = VarInt::decode(r)?.0;
+impl DecodeBytes for SoundId {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let i = VarInt::decode_bytes(r)?.0;
 
         if i == 0 {
             Ok(SoundId::Direct {
-                id: Ident::decode(r)?,
-                range: <Option<f32>>::decode(r)?,
+                id: Ident::decode_bytes(r)?,
+                range: <Option<f32>>::decode_bytes(r)?,
             })
         } else {
             Ok(SoundId::Reference { id: VarInt(i - 1) })

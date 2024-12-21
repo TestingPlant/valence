@@ -1,8 +1,8 @@
 use valence_math::DVec3;
 
-use crate::{Decode, Encode, Packet};
+use crate::{Decode, DecodeBytesAuto, Encode, Packet};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct VehicleMoveC2s {
     pub position: DVec3,
     pub yaw: f32,

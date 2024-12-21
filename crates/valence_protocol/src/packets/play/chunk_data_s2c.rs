@@ -1,16 +1,17 @@
 use std::borrow::Cow;
 
+use valence_bytes::CowBytes;
 use valence_generated::block::BlockEntityKind;
 use valence_nbt::Compound;
 
 use crate::array::FixedArray;
-use crate::{ChunkPos, Decode, Encode, Packet};
+use crate::{ChunkPos, Decode, DecodeBytes, DecodeBytesAuto, Encode, Packet};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct ChunkDataS2c<'a> {
     pub pos: ChunkPos,
     pub heightmaps: Cow<'a, Compound>,
-    pub blocks_and_biomes: &'a [u8],
+    pub blocks_and_biomes: CowBytes<'a>,
     pub block_entities: Cow<'a, [ChunkDataBlockEntity<'a>]>,
     pub sky_light_mask: Cow<'a, [u64]>,
     pub block_light_mask: Cow<'a, [u64]>,
@@ -20,7 +21,7 @@ pub struct ChunkDataS2c<'a> {
     pub block_light_arrays: Cow<'a, [FixedArray<u8, 2048>]>,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub struct ChunkDataBlockEntity<'a> {
     pub packed_xz: i8,
     pub y: i16,

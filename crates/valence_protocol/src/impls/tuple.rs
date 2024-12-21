@@ -1,6 +1,8 @@
 use std::io::Write;
 
-use crate::{Decode, Encode};
+use bytes::Bytes;
+
+use crate::{Decode, DecodeBytes, Encode};
 
 macro_rules! impl_tuple {
     ($($ty:ident)*) => {
@@ -15,9 +17,15 @@ macro_rules! impl_tuple {
             }
         }
 
-        impl<'a, $($ty: Decode<'a>,)*> Decode<'a> for ($($ty,)*) {
-            fn decode(_r: &mut &'a [u8]) -> anyhow::Result<Self> {
+        impl<$($ty: Decode,)*> Decode for ($($ty,)*) {
+            fn decode(_r: &mut &[u8]) -> anyhow::Result<Self> {
                 Ok(($($ty::decode(_r)?,)*))
+            }
+        }
+
+        impl<$($ty: DecodeBytes,)*> DecodeBytes for ($($ty,)*) {
+            fn decode_bytes(_r: &mut Bytes) -> anyhow::Result<Self> {
+                Ok(($($ty::decode_bytes(_r)?,)*))
             }
         }
     }

@@ -1,8 +1,8 @@
-use crate::{Bounded, Decode, Encode, Packet, PacketState, RawBytes, VarInt};
+use crate::{Bounded, DecodeBytes, Encode, Packet, PacketState, RawBytes, VarInt};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 #[packet(state = PacketState::Login)]
-pub struct LoginQueryResponseC2s<'a> {
+pub struct LoginQueryResponseC2s {
     pub message_id: VarInt,
-    pub data: Option<Bounded<RawBytes<'a>, 1048576>>,
+    pub data: Option<Bounded<RawBytes, 1048576>>,
 }

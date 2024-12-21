@@ -19,11 +19,7 @@
 
 use proc_macro::TokenStream as StdTokenStream;
 use proc_macro2::TokenStream;
-use quote::ToTokens;
-use syn::{
-    parse_quote, Attribute, GenericParam, Generics, Lifetime, LifetimeParam, LitInt, Result,
-    Variant,
-};
+use syn::{parse_quote, Attribute, GenericParam, Generics, LitInt, Result, Variant};
 
 mod decode;
 mod encode;
@@ -40,6 +36,22 @@ pub fn derive_encode(item: StdTokenStream) -> StdTokenStream {
 #[proc_macro_derive(Decode, attributes(packet))]
 pub fn derive_decode(item: StdTokenStream) -> StdTokenStream {
     match decode::derive_decode(item.into()) {
+        Ok(tokens) => tokens.into(),
+        Err(e) => e.into_compile_error().into(),
+    }
+}
+
+#[proc_macro_derive(DecodeBytes, attributes(packet))]
+pub fn derive_decode_bytes(item: StdTokenStream) -> StdTokenStream {
+    match decode::derive_decode_bytes(item.into()) {
+        Ok(tokens) => tokens.into(),
+        Err(e) => e.into_compile_error().into(),
+    }
+}
+
+#[proc_macro_derive(DecodeBytesAuto, attributes(packet))]
+pub fn derive_decode_bytes_auto(item: StdTokenStream) -> StdTokenStream {
+    match decode::derive_decode_bytes_auto(item.into()) {
         Ok(tokens) => tokens.into(),
         Err(e) => e.into_compile_error().into(),
     }
@@ -90,30 +102,6 @@ fn parse_tag_attr(attrs: &[Attribute]) -> Result<Option<i32>> {
     }
 
     Ok(None)
-}
-
-/// Adding our lifetime to the generics before calling `.split_for_impl()` would
-/// also add it to the resulting ty_generics, which we don't want. So I'm doing
-/// this hack.
-fn decode_split_for_impl(
-    mut generics: Generics,
-    lifetime: Lifetime,
-) -> (TokenStream, TokenStream, TokenStream) {
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-
-    let mut impl_generics = impl_generics.to_token_stream();
-    let ty_generics = ty_generics.to_token_stream();
-    let where_clause = where_clause.to_token_stream();
-
-    if generics.lifetimes().next().is_none() {
-        generics
-            .params
-            .push(GenericParam::Lifetime(LifetimeParam::new(lifetime)));
-
-        impl_generics = generics.split_for_impl().0.to_token_stream();
-    }
-
-    (impl_generics, ty_generics, where_clause)
 }
 
 fn add_trait_bounds(generics: &mut Generics, trait_: TokenStream) {

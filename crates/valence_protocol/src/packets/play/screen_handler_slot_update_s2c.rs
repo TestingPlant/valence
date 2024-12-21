@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
-use crate::{Decode, Encode, ItemStack, Packet, VarInt};
+use crate::{Decode, DecodeBytesAuto, Encode, ItemStack, Packet, VarInt};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct ScreenHandlerSlotUpdateS2c<'a> {
     pub window_id: i8,
     pub state_id: VarInt,

@@ -4,7 +4,7 @@ use std::slice;
 use anyhow::ensure;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
-use crate::{Decode, Encode};
+use crate::{impl_decode_bytes_auto, Decode, Encode};
 
 impl Encode for bool {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -19,13 +19,15 @@ impl Encode for bool {
     }
 }
 
-impl Decode<'_> for bool {
+impl Decode for bool {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let n = r.read_u8()?;
         ensure!(n <= 1, "decoded boolean byte is not 0 or 1 (got {n})");
         Ok(n == 1)
     }
 }
+
+impl_decode_bytes_auto!(bool);
 
 impl Encode for u8 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -37,11 +39,13 @@ impl Encode for u8 {
     }
 }
 
-impl Decode<'_> for u8 {
+impl Decode for u8 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(r.read_u8()?)
     }
 }
+
+impl_decode_bytes_auto!(u8);
 
 impl Encode for i8 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -55,11 +59,13 @@ impl Encode for i8 {
     }
 }
 
-impl Decode<'_> for i8 {
+impl Decode for i8 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(r.read_i8()?)
     }
 }
+
+impl_decode_bytes_auto!(i8);
 
 impl Encode for u16 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -67,11 +73,13 @@ impl Encode for u16 {
     }
 }
 
-impl Decode<'_> for u16 {
+impl Decode for u16 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(r.read_u16::<BigEndian>()?)
     }
 }
+
+impl_decode_bytes_auto!(u16);
 
 impl Encode for i16 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -79,11 +87,13 @@ impl Encode for i16 {
     }
 }
 
-impl Decode<'_> for i16 {
+impl Decode for i16 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(r.read_i16::<BigEndian>()?)
     }
 }
+
+impl_decode_bytes_auto!(i16);
 
 impl Encode for u32 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -91,11 +101,13 @@ impl Encode for u32 {
     }
 }
 
-impl Decode<'_> for u32 {
+impl Decode for u32 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(r.read_u32::<BigEndian>()?)
     }
 }
+
+impl_decode_bytes_auto!(u32);
 
 impl Encode for i32 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -103,11 +115,13 @@ impl Encode for i32 {
     }
 }
 
-impl Decode<'_> for i32 {
-    fn decode(r: &mut &'_ [u8]) -> anyhow::Result<Self> {
+impl Decode for i32 {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(r.read_i32::<BigEndian>()?)
     }
 }
+
+impl_decode_bytes_auto!(i32);
 
 impl Encode for u64 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -115,11 +129,13 @@ impl Encode for u64 {
     }
 }
 
-impl Decode<'_> for u64 {
+impl Decode for u64 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(r.read_u64::<BigEndian>()?)
     }
 }
+
+impl_decode_bytes_auto!(u64);
 
 impl Encode for i64 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -127,11 +143,13 @@ impl Encode for i64 {
     }
 }
 
-impl Decode<'_> for i64 {
+impl Decode for i64 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(r.read_i64::<BigEndian>()?)
     }
 }
+
+impl_decode_bytes_auto!(i64);
 
 impl Encode for u128 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -139,11 +157,13 @@ impl Encode for u128 {
     }
 }
 
-impl Decode<'_> for u128 {
+impl Decode for u128 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(r.read_u128::<BigEndian>()?)
     }
 }
+
+impl_decode_bytes_auto!(u128);
 
 impl Encode for i128 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -151,11 +171,13 @@ impl Encode for i128 {
     }
 }
 
-impl Decode<'_> for i128 {
-    fn decode(r: &mut &'_ [u8]) -> anyhow::Result<Self> {
+impl Decode for i128 {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(r.read_i128::<BigEndian>()?)
     }
 }
+
+impl_decode_bytes_auto!(i128);
 
 impl Encode for f32 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -168,13 +190,15 @@ impl Encode for f32 {
     }
 }
 
-impl Decode<'_> for f32 {
+impl Decode for f32 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let f = r.read_f32::<BigEndian>()?;
         ensure!(f.is_finite(), "attempt to decode non-finite f32 ({f})");
         Ok(f)
     }
 }
+
+impl_decode_bytes_auto!(f32);
 
 impl Encode for f64 {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -187,10 +211,12 @@ impl Encode for f64 {
     }
 }
 
-impl Decode<'_> for f64 {
+impl Decode for f64 {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let f = r.read_f64::<BigEndian>()?;
         ensure!(f.is_finite(), "attempt to decode non-finite f64 ({f})");
         Ok(f)
     }
 }
+
+impl_decode_bytes_auto!(f64);

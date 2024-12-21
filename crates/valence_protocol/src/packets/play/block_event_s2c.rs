@@ -1,7 +1,7 @@
 use crate::block::BlockKind;
-use crate::{BlockPos, Decode, Encode, Packet};
+use crate::{BlockPos, Decode, DecodeBytesAuto, Encode, Packet};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct BlockEventS2c {
     pub position: BlockPos,
     pub action_id: u8,

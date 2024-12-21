@@ -1,9 +1,9 @@
 use bitfield_struct::bitfield;
 use valence_math::DVec3;
 
-use crate::{Decode, Encode, Packet, VarInt};
+use crate::{Decode, DecodeBytesAuto, Encode, Packet, VarInt};
 
-#[derive(Copy, Clone, PartialEq, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, PartialEq, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct PlayerPositionLookS2c {
     pub position: DVec3,
     pub yaw: f32,
@@ -13,7 +13,7 @@ pub struct PlayerPositionLookS2c {
 }
 
 #[bitfield(u8)]
-#[derive(PartialEq, Eq, Encode, Decode)]
+#[derive(PartialEq, Eq, Encode, Decode, DecodeBytesAuto)]
 pub struct PlayerPositionLookFlags {
     pub x: bool,
     pub y: bool,

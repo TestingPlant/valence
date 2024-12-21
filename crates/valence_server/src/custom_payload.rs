@@ -18,12 +18,12 @@ impl Plugin for CustomPayloadPlugin {
 #[derive(Event, Clone, Debug)]
 pub struct CustomPayloadEvent {
     pub client: Entity,
-    pub channel: Ident<String>,
+    pub channel: Ident,
     pub data: Box<[u8]>,
 }
 
 impl Client {
-    pub fn send_custom_payload(&mut self, channel: Ident<&str>, data: &[u8]) {
+    pub fn send_custom_payload(&mut self, channel: Ident, data: &[u8]) {
         self.write_packet(&CustomPayloadS2c {
             channel: channel.into(),
             data: Bounded(data.into()),

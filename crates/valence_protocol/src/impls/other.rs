@@ -1,13 +1,15 @@
 use std::io::Write;
 
 use anyhow::Context;
+use bytes::Bytes;
 use uuid::Uuid;
+use valence_bytes::Utf8Bytes;
 use valence_generated::block::{BlockEntityKind, BlockKind, BlockState};
 use valence_generated::item::ItemKind;
-use valence_ident::{Ident, IdentError};
+use valence_ident::Ident;
 use valence_nbt::Compound;
 
-use crate::{Decode, Encode, VarInt};
+use crate::{impl_decode_bytes_auto, Decode, DecodeBytes, Encode, VarInt};
 
 impl<T: Encode> Encode for Option<T> {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
@@ -21,10 +23,19 @@ impl<T: Encode> Encode for Option<T> {
     }
 }
 
-impl<'a, T: Decode<'a>> Decode<'a> for Option<T> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl<T: Decode> Decode for Option<T> {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(match bool::decode(r)? {
             true => Some(T::decode(r)?),
+            false => None,
+        })
+    }
+}
+
+impl<T: DecodeBytes> DecodeBytes for Option<T> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        Ok(match bool::decode_bytes(r)? {
+            true => Some(T::decode_bytes(r)?),
             false => None,
         })
     }
@@ -36,11 +47,13 @@ impl Encode for Uuid {
     }
 }
 
-impl<'a> Decode<'a> for Uuid {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl Decode for Uuid {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         u128::decode(r).map(Uuid::from_u128)
     }
 }
+
+impl_decode_bytes_auto!(Uuid);
 
 impl Encode for Compound {
     fn encode(&self, w: impl Write) -> anyhow::Result<()> {
@@ -48,7 +61,7 @@ impl Encode for Compound {
     }
 }
 
-impl Decode<'_> for Compound {
+impl Decode for Compound {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         // Check for null compound.
         if r.first() == Some(&0) {
@@ -62,19 +75,17 @@ impl Decode<'_> for Compound {
     }
 }
 
-impl<S: Encode> Encode for Ident<S> {
+impl_decode_bytes_auto!(Compound);
+
+impl Encode for Ident {
     fn encode(&self, w: impl Write) -> anyhow::Result<()> {
         self.as_ref().encode(w)
     }
 }
 
-impl<'a, S> Decode<'a> for Ident<S>
-where
-    S: Decode<'a>,
-    Ident<S>: TryFrom<S, Error = IdentError>,
-{
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        Ok(Ident::try_from(S::decode(r)?)?)
+impl DecodeBytes for Ident {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        Ok(Ident::try_from(Utf8Bytes::decode_bytes(r)?)?)
     }
 }
 
@@ -84,7 +95,7 @@ impl Encode for BlockState {
     }
 }
 
-impl Decode<'_> for BlockState {
+impl Decode for BlockState {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let id = VarInt::decode(r)?.0;
         let errmsg = "invalid block state ID";
@@ -93,13 +104,15 @@ impl Decode<'_> for BlockState {
     }
 }
 
+impl_decode_bytes_auto!(BlockState);
+
 impl Encode for BlockKind {
     fn encode(&self, w: impl Write) -> anyhow::Result<()> {
         VarInt(self.to_raw() as i32).encode(w)
     }
 }
 
-impl Decode<'_> for BlockKind {
+impl Decode for BlockKind {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let id = VarInt::decode(r)?.0;
         let errmsg = "invalid block kind ID";
@@ -108,18 +121,22 @@ impl Decode<'_> for BlockKind {
     }
 }
 
+impl_decode_bytes_auto!(BlockKind);
+
 impl Encode for BlockEntityKind {
     fn encode(&self, w: impl Write) -> anyhow::Result<()> {
         VarInt(self.id() as i32).encode(w)
     }
 }
 
-impl<'a> Decode<'a> for BlockEntityKind {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl Decode for BlockEntityKind {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let id = VarInt::decode(r)?;
         Self::from_id(id.0 as u32).with_context(|| format!("id {}", id.0))
     }
 }
+
+impl_decode_bytes_auto!(BlockEntityKind);
 
 impl Encode for ItemKind {
     fn encode(&self, w: impl Write) -> anyhow::Result<()> {
@@ -127,7 +144,7 @@ impl Encode for ItemKind {
     }
 }
 
-impl Decode<'_> for ItemKind {
+impl Decode for ItemKind {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let id = VarInt::decode(r)?.0;
         let errmsg = "invalid item ID";
@@ -135,3 +152,5 @@ impl Decode<'_> for ItemKind {
         ItemKind::from_raw(id.try_into().context(errmsg)?).context(errmsg)
     }
 }
+
+impl_decode_bytes_auto!(ItemKind);

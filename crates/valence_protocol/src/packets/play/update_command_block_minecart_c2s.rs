@@ -1,8 +1,10 @@
-use crate::{Decode, Encode, Packet, VarInt};
+use valence_bytes::CowUtf8Bytes;
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+use crate::{DecodeBytes, Encode, Packet, VarInt};
+
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct UpdateCommandBlockMinecartC2s<'a> {
     pub entity_id: VarInt,
-    pub command: &'a str,
+    pub command: CowUtf8Bytes<'a>,
     pub track_output: bool,
 }

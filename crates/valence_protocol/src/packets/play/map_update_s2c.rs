@@ -1,9 +1,10 @@
 use std::borrow::Cow;
 use std::io::Write;
 
+use valence_bytes::{Bytes, CowBytes};
 use valence_text::Text;
 
-use crate::{Decode, Encode, Packet, VarInt};
+use crate::{Decode, DecodeBytes, DecodeBytesAuto, Encode, Packet, VarInt};
 
 #[derive(Clone, PartialEq, Debug, Packet)]
 pub struct MapUpdateS2c<'a> {
@@ -14,7 +15,7 @@ pub struct MapUpdateS2c<'a> {
     pub data: Option<Data<'a>>,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub struct Icon<'a> {
     pub icon_type: IconType,
     /// In map coordinates; -128 for furthest left, +127 for furthest right
@@ -24,7 +25,7 @@ pub struct Icon<'a> {
     pub display_name: Option<Cow<'a, Text>>,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum IconType {
     WhiteArrow,
     GreenArrow,
@@ -55,12 +56,12 @@ pub enum IconType {
     TreasureMarker,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode)]
+#[derive(Clone, PartialEq, Eq, Debug, Encode)]
 pub struct Data<'a> {
     pub columns: u8,
     pub rows: u8,
     pub position: [i8; 2],
-    pub data: &'a [u8],
+    pub data: CowBytes<'a>,
 }
 
 impl Encode for MapUpdateS2c<'_> {
@@ -70,7 +71,7 @@ impl Encode for MapUpdateS2c<'_> {
         self.locked.encode(&mut w)?;
         self.icons.encode(&mut w)?;
 
-        match self.data {
+        match &self.data {
             None => 0u8.encode(&mut w)?,
             Some(data) => data.encode(&mut w)?,
         }
@@ -79,18 +80,18 @@ impl Encode for MapUpdateS2c<'_> {
     }
 }
 
-impl<'a> Decode<'a> for MapUpdateS2c<'a> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let map_id = VarInt::decode(r)?;
-        let scale = i8::decode(r)?;
-        let locked = bool::decode(r)?;
-        let icons = <Option<Vec<Icon<'a>>>>::decode(r)?;
-        let columns = u8::decode(r)?;
+impl<'a> DecodeBytes for MapUpdateS2c<'a> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let map_id = VarInt::decode_bytes(r)?;
+        let scale = i8::decode_bytes(r)?;
+        let locked = bool::decode_bytes(r)?;
+        let icons = <Option<Vec<Icon<'static>>>>::decode_bytes(r)?;
+        let columns = u8::decode_bytes(r)?;
 
         let data = if columns > 0 {
-            let rows = u8::decode(r)?;
-            let position = <[i8; 2]>::decode(r)?;
-            let data = <&'a [u8]>::decode(r)?;
+            let rows = u8::decode_bytes(r)?;
+            let position = <[i8; 2]>::decode_bytes(r)?;
+            let data = CowBytes::decode_bytes(r)?;
 
             Some(Data {
                 columns,

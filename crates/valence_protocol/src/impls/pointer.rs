@@ -3,7 +3,9 @@ use std::io::Write;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use crate::{Decode, Encode};
+use valence_bytes::Bytes;
+
+use crate::{Decode, DecodeBytes, Encode};
 
 impl<T: Encode + ?Sized> Encode for &T {
     fn encode(&self, w: impl Write) -> anyhow::Result<()> {
@@ -23,9 +25,15 @@ impl<T: Encode + ?Sized> Encode for Box<T> {
     }
 }
 
-impl<'a, T: Decode<'a>> Decode<'a> for Box<T> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl<T: Decode> Decode for Box<T> {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         T::decode(r).map(Box::new)
+    }
+}
+
+impl<T: DecodeBytes> DecodeBytes for Box<T> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        T::decode_bytes(r).map(Box::new)
     }
 }
 
@@ -35,9 +43,15 @@ impl<T: Encode + ?Sized> Encode for Rc<T> {
     }
 }
 
-impl<'a, T: Decode<'a>> Decode<'a> for Rc<T> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl<T: Decode> Decode for Rc<T> {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         T::decode(r).map(Rc::new)
+    }
+}
+
+impl<T: DecodeBytes> DecodeBytes for Rc<T> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        T::decode_bytes(r).map(Rc::new)
     }
 }
 
@@ -47,9 +61,15 @@ impl<T: Encode + ?Sized> Encode for Arc<T> {
     }
 }
 
-impl<'a, T: Decode<'a>> Decode<'a> for Arc<T> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl<T: Decode> Decode for Arc<T> {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         T::decode(r).map(Arc::new)
+    }
+}
+
+impl<T: DecodeBytes> DecodeBytes for Arc<T> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        T::decode_bytes(r).map(Arc::new)
     }
 }
 
@@ -62,24 +82,34 @@ where
     }
 }
 
-impl<'a, 'b, B> Decode<'a> for Cow<'b, B>
+impl<'a, B> Decode for Cow<'a, B>
 where
     B: ToOwned + ?Sized,
-    B::Owned: Decode<'a>,
+    B::Owned: Decode,
 {
-    default fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         B::Owned::decode(r).map(Cow::Owned)
     }
 }
 
-impl<'a, 'b, B> Decode<'a> for Cow<'b, B>
+impl<'a, B> DecodeBytes for Cow<'a, B>
 where
     B: ToOwned + ?Sized,
-    B::Owned: Decode<'a>,
-    &'b B: Decode<'a>,
+    B::Owned: DecodeBytes,
 {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let decoded: &'b B = Decode::decode(r)?;
-        Ok(Cow::Borrowed(decoded))
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        B::Owned::decode_bytes(r).map(Cow::Owned)
     }
 }
+
+// impl<'a, 'b, B> Decode<'a> for Cow<'b, B>
+// where
+//     B: ToOwned + ?Sized,
+//     B::Owned: Decode<'a>,
+//     &'b B: Decode<'a>,
+// {
+//     fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+//         let decoded: &'b B = Decode::decode(r)?;
+//         Ok(Cow::Borrowed(decoded))
+//     }
+// }

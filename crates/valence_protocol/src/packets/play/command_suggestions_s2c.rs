@@ -1,10 +1,11 @@
 use std::borrow::Cow;
 
+use valence_bytes::CowUtf8Bytes;
 use valence_text::Text;
 
-use crate::{Decode, Encode, Packet, VarInt};
+use crate::{DecodeBytes, Encode, Packet, VarInt};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct CommandSuggestionsS2c<'a> {
     pub id: VarInt,
     pub start: VarInt,
@@ -12,8 +13,8 @@ pub struct CommandSuggestionsS2c<'a> {
     pub matches: Vec<CommandSuggestionsMatch<'a>>,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, DecodeBytes)]
 pub struct CommandSuggestionsMatch<'a> {
-    pub suggested_match: &'a str,
+    pub suggested_match: CowUtf8Bytes<'a>,
     pub tooltip: Option<Cow<'a, Text>>,
 }

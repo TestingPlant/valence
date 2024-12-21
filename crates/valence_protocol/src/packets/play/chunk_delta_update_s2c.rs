@@ -4,16 +4,16 @@ use std::io::Write;
 use bitfield_struct::bitfield;
 
 use crate::chunk_section_pos::ChunkSectionPos;
-use crate::{Decode, Encode, Packet, VarLong};
+use crate::{Decode, DecodeBytesAuto, Encode, Packet, VarLong};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct ChunkDeltaUpdateS2c<'a> {
     pub chunk_sect_pos: ChunkSectionPos,
     pub blocks: Cow<'a, [ChunkDeltaUpdateEntry]>,
 }
 
 #[bitfield(u64)]
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, DecodeBytesAuto)]
 pub struct ChunkDeltaUpdateEntry {
     #[bits(4)]
     pub off_y: u8,
@@ -32,7 +32,7 @@ impl Encode for ChunkDeltaUpdateEntry {
     }
 }
 
-impl Decode<'_> for ChunkDeltaUpdateEntry {
+impl Decode for ChunkDeltaUpdateEntry {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(ChunkDeltaUpdateEntry(VarLong::decode(r)?.0 as _))
     }

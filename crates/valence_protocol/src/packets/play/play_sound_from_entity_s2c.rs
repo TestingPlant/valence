@@ -1,7 +1,7 @@
 use crate::sound::SoundCategory;
-use crate::{Decode, Encode, Packet, VarInt};
+use crate::{Decode, DecodeBytesAuto, Encode, Packet, VarInt};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct PlaySoundFromEntityS2c {
     pub id: VarInt,
     pub category: SoundCategory,

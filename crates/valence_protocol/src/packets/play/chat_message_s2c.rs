@@ -2,16 +2,17 @@ use std::borrow::Cow;
 use std::io::Write;
 
 use uuid::Uuid;
+use valence_bytes::{Bytes, CowFixedBytes, CowUtf8Bytes};
 use valence_text::Text;
 
-use crate::{Bounded, Decode, Encode, Packet, VarInt};
+use crate::{Bounded, Decode, DecodeBytes, DecodeBytesAuto, Encode, Packet, VarInt};
 
 #[derive(Clone, PartialEq, Debug, Packet)]
 pub struct ChatMessageS2c<'a> {
     pub sender: Uuid,
     pub index: VarInt,
-    pub message_signature: Option<&'a [u8; 256]>,
-    pub message: Bounded<&'a str, 256>,
+    pub message_signature: Option<CowFixedBytes<'a, 256>>,
+    pub message: Bounded<CowUtf8Bytes<'a>, 256>,
     pub timestamp: u64,
     pub salt: u64,
     pub previous_messages: Vec<MessageSignature<'a>>,
@@ -23,7 +24,7 @@ pub struct ChatMessageS2c<'a> {
     pub network_target_name: Option<Cow<'a, Text>>,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum MessageFilterType {
     PassThrough,
     FullyFiltered,
@@ -58,26 +59,26 @@ impl<'a> Encode for ChatMessageS2c<'a> {
     }
 }
 
-impl<'a> Decode<'a> for ChatMessageS2c<'a> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let sender = Uuid::decode(r)?;
-        let index = VarInt::decode(r)?;
-        let message_signature = Option::<&'a [u8; 256]>::decode(r)?;
-        let message = Decode::decode(r)?;
-        let time_stamp = u64::decode(r)?;
-        let salt = u64::decode(r)?;
-        let previous_messages = Vec::<MessageSignature>::decode(r)?;
-        let unsigned_content = Option::<Cow<'a, Text>>::decode(r)?;
-        let filter_type = MessageFilterType::decode(r)?;
+impl<'a> DecodeBytes for ChatMessageS2c<'a> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let sender = Uuid::decode_bytes(r)?;
+        let index = VarInt::decode_bytes(r)?;
+        let message_signature = Option::<CowFixedBytes<'a, 256>>::decode_bytes(r)?;
+        let message = DecodeBytes::decode_bytes(r)?;
+        let time_stamp = u64::decode_bytes(r)?;
+        let salt = u64::decode_bytes(r)?;
+        let previous_messages = Vec::<MessageSignature>::decode_bytes(r)?;
+        let unsigned_content = Option::<Cow<'a, Text>>::decode_bytes(r)?;
+        let filter_type = MessageFilterType::decode_bytes(r)?;
 
         let filter_type_bits = match filter_type {
-            MessageFilterType::PartiallyFiltered => Some(u8::decode(r)?),
+            MessageFilterType::PartiallyFiltered => Some(u8::decode_bytes(r)?),
             _ => None,
         };
 
-        let chat_type = VarInt::decode(r)?;
-        let network_name = <Cow<'a, Text>>::decode(r)?;
-        let network_target_name = Option::<Cow<'a, Text>>::decode(r)?;
+        let chat_type = VarInt::decode_bytes(r)?;
+        let network_name = <Cow<'a, Text>>::decode_bytes(r)?;
+        let network_target_name = Option::<Cow<'a, Text>>::decode_bytes(r)?;
 
         Ok(Self {
             sender,
@@ -97,17 +98,17 @@ impl<'a> Decode<'a> for ChatMessageS2c<'a> {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct MessageSignature<'a> {
     pub message_id: i32,
-    pub signature: Option<&'a [u8; 256]>,
+    pub signature: Option<CowFixedBytes<'a, 256>>,
 }
 
-impl<'a> Encode for MessageSignature<'a> {
+impl Encode for MessageSignature<'_> {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
         VarInt(self.message_id + 1).encode(&mut w)?;
 
-        match self.signature {
+        match &self.signature {
             None => {}
             Some(signature) => signature.encode(&mut w)?,
         }
@@ -116,12 +117,12 @@ impl<'a> Encode for MessageSignature<'a> {
     }
 }
 
-impl<'a> Decode<'a> for MessageSignature<'a> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let message_id = VarInt::decode(r)?.0 - 1; // TODO: this can underflow.
+impl<'a> DecodeBytes for MessageSignature<'a> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let message_id = VarInt::decode_bytes(r)?.0 - 1; // TODO: this can underflow.
 
         let signature = if message_id == -1 {
-            Some(<&[u8; 256]>::decode(r)?)
+            Some(DecodeBytes::decode_bytes(r)?)
         } else {
             None
         };

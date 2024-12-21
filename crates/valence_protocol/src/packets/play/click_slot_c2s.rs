@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
-use crate::{Decode, Encode, ItemStack, Packet, VarInt};
+use crate::{Decode, DecodeBytesAuto, Encode, ItemStack, Packet, VarInt};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct ClickSlotC2s<'a> {
     pub window_id: u8,
     pub state_id: VarInt,
@@ -15,7 +15,7 @@ pub struct ClickSlotC2s<'a> {
     pub carried_item: ItemStack,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Encode, Decode)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Encode, Decode, DecodeBytesAuto)]
 pub enum ClickMode {
     Click,
     ShiftClick,
@@ -26,7 +26,7 @@ pub enum ClickMode {
     DoubleClick,
 }
 
-#[derive(Clone, Debug, Encode, Decode)]
+#[derive(Clone, Debug, Encode, Decode, DecodeBytesAuto)]
 pub struct SlotChange {
     pub idx: i16,
     pub stack: ItemStack,

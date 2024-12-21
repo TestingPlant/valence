@@ -7,8 +7,8 @@ use valence_math::DVec3;
 use valence_protocol::encode::WritePacket;
 use valence_protocol::packets::play::{
     EntityAnimationS2c, EntityAttributesS2c, EntityPositionS2c, EntitySetHeadYawS2c,
-    EntitySpawnS2c, EntityStatusS2c, EntityTrackerUpdateS2c, EntityVelocityUpdateS2c,
-    ExperienceOrbSpawnS2c, MoveRelativeS2c, PlayerSpawnS2c, RotateAndMoveRelativeS2c, RotateS2c,
+    EntitySpawnS2c, EntityStatusS2c, EntityVelocityUpdateS2c, ExperienceOrbSpawnS2c,
+    MoveRelativeS2c, PlayerSpawnS2c, RotateAndMoveRelativeS2c, RotateS2c,
 };
 use valence_protocol::var_int::VarInt;
 use valence_protocol::ByteAngle;
@@ -76,11 +76,12 @@ impl EntityInitQueryItem<'_> {
             }),
         }
 
-        if let Some(init_data) = self.tracked_data.init_data() {
-            writer.write_packet(&EntityTrackerUpdateS2c {
-                entity_id: self.entity_id.get().into(),
-                tracked_values: init_data.into(),
-            });
+        if let Some(_init_data) = self.tracked_data.init_data() {
+            todo!()
+            // writer.write_packet(&EntityTrackerUpdateS2c {
+            //     entity_id: self.entity_id.get().into(),
+            //     tracked_values: init_data.into(),
+            // });
         }
     }
 }
@@ -164,11 +165,12 @@ impl UpdateEntityQueryItem<'_> {
             });
         }
 
-        if let Some(update_data) = self.tracked_data.update_data() {
-            writer.write_packet(&EntityTrackerUpdateS2c {
-                entity_id,
-                tracked_values: update_data.into(),
-            });
+        if let Some(_update_data) = self.tracked_data.update_data() {
+            todo!();
+            // writer.write_packet(&EntityTrackerUpdateS2c {
+            //     entity_id,
+            //     tracked_values: update_data.into(),
+            // });
         }
 
         if self.statuses.0 != 0 {

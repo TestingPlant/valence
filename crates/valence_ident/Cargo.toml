@@ -9,6 +9,8 @@ documentation.workspace = true
 license.workspace = true
 
 [dependencies]
+bytes.workspace = true
 thiserror.workspace = true
 serde.workspace = true
+valence_bytes.workspace = true
 valence_ident_macros.workspace = true

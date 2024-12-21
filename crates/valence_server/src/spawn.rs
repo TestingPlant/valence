@@ -18,7 +18,7 @@ use crate::layer::ChunkLayer;
 // Components for the join game and respawn packet.
 
 #[derive(Component, Clone, PartialEq, Eq, Default, Debug)]
-pub struct DeathLocation(pub Option<(Ident<String>, BlockPos)>);
+pub struct DeathLocation(pub Option<(Ident, BlockPos)>);
 
 #[derive(Component, Copy, Clone, PartialEq, Eq, Default, Debug, Deref, DerefMut)]
 pub struct IsHardcore(pub bool);
@@ -94,16 +94,16 @@ pub(super) fn initial_join(
             continue;
         };
 
-        let dimension_names: BTreeSet<Ident<Cow<str>>> = codec
+        let dimension_names: BTreeSet<Ident> = codec
             .registry(BiomeRegistry::KEY)
             .iter()
-            .map(|value| value.name.as_str_ident().into())
+            .map(|value| value.name.into())
             .collect();
 
-        let dimension_name: Ident<Cow<str>> = chunk_layer.dimension_type_name().into();
+        let dimension_name: Ident = chunk_layer.dimension_type_name().into();
 
         let last_death_location = spawn.death_loc.0.as_ref().map(|(id, pos)| GlobalPos {
-            dimension_name: id.as_str_ident().into(),
+            dimension_name: id.clone(),
             position: *pos,
         });
 
@@ -172,7 +172,7 @@ pub(super) fn respawn(
         let dimension_name = chunk_layer.dimension_type_name();
 
         let last_death_location = death_loc.0.as_ref().map(|(id, pos)| GlobalPos {
-            dimension_name: id.as_str_ident().into(),
+            dimension_name: id.clone(),
             position: *pos,
         });
 

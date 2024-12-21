@@ -597,8 +597,8 @@ impl<'a, S> From<ValueMut<'a, S>> for ValueRef<'a, S> {
 }
 
 #[cfg(feature = "valence_ident")]
-impl<'a> From<&'a valence_ident::Ident<String>> for ValueRef<'a, String> {
-    fn from(v: &'a valence_ident::Ident<String>) -> Self {
+impl<'a> From<&'a valence_ident::Ident> for ValueRef<'a, String> {
+    fn from(v: &'a valence_ident::Ident) -> Self {
         Self::String(v.as_ref())
     }
 }

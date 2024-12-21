@@ -1,8 +1,8 @@
 use valence_math::DVec3;
 
-use crate::{packet_id, Decode, Encode, Packet};
+use crate::{packet_id, Decode, DecodeBytesAuto, Encode, Packet};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 #[packet(id = packet_id::FULL)]
 pub struct FullC2s {
     pub position: DVec3,

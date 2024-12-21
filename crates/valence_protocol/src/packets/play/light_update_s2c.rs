@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 
 use crate::array::FixedArray;
-use crate::{Decode, Encode, Packet, VarInt};
+use crate::{Decode, DecodeBytesAuto, Encode, Packet, VarInt};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct LightUpdateS2c<'a> {
     pub chunk_x: VarInt,
     pub chunk_z: VarInt,

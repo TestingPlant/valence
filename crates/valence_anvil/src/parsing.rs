@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use thiserror::Error;
+use valence_bytes::Utf8Bytes;
 use valence_server::block::{PropName, PropValue};
 use valence_server::layer::chunk::{Chunk, UnloadedChunk};
 use valence_server::nbt::{Compound, List, Value};
@@ -17,7 +18,7 @@ use crate::{RegionError, RegionFolder};
 pub struct DimensionFolder {
     region: RegionFolder,
     /// Mapping of biome names to their biome ID.
-    biome_to_id: BTreeMap<Ident<String>, BiomeId>,
+    biome_to_id: BTreeMap<Ident, BiomeId>,
 }
 
 impl DimensionFolder {
@@ -27,10 +28,7 @@ impl DimensionFolder {
 
         Self {
             region: RegionFolder::new(region_root),
-            biome_to_id: biomes
-                .iter()
-                .map(|(id, name, _)| (name.to_string_ident(), id))
-                .collect(),
+            biome_to_id: biomes.iter().map(|(id, name, _)| (name, id)).collect(),
         }
     }
 
@@ -110,14 +108,14 @@ pub enum ParseChunkError {
     #[error("missing block entity ident")]
     MissingBlockEntityIdent,
     #[error("invalid block entity ident of \"{0}\"")]
-    InvalidBlockEntityName(String),
+    InvalidBlockEntityName(Utf8Bytes),
     #[error("invalid block entity position")]
     InvalidBlockEntityPosition,
 }
 
 pub fn parse_chunk(
     mut nbt: Compound,
-    biome_map: &BTreeMap<Ident<String>, BiomeId>, // TODO: replace with biome registry arg.
+    biome_map: &BTreeMap<Ident, BiomeId>, // TODO: replace with biome registry arg.
 ) -> Result<UnloadedChunk, ParseChunkError> {
     let Some(Value::List(List::Compound(sections))) = nbt.remove("sections") else {
         return Err(ParseChunkError::MissingSections);
@@ -261,12 +259,16 @@ pub fn parse_chunk(
         converted_biome_palette.clear();
 
         for biome_name in palette {
-            let Ok(ident) = Ident::<Cow<str>>::new(biome_name) else {
+            if !Ident::is_valid(&biome_name) {
                 return Err(ParseChunkError::BadBiomeName);
             };
 
-            converted_biome_palette
-                .push(biome_map.get(ident.as_str()).copied().unwrap_or_default());
+            converted_biome_palette.push(
+                biome_map
+                    .get(biome_name.as_str())
+                    .copied()
+                    .unwrap_or_default(),
+            );
         }
 
         if converted_biome_palette.len() == 1 {

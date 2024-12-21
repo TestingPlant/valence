@@ -1,6 +1,6 @@
-use crate::{BlockPos, Decode, Direction, Encode, Packet, VarInt};
+use crate::{BlockPos, Decode, DecodeBytesAuto, Direction, Encode, Packet, VarInt};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct PlayerActionC2s {
     pub action: PlayerAction,
     pub position: BlockPos,
@@ -8,7 +8,7 @@ pub struct PlayerActionC2s {
     pub sequence: VarInt,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum PlayerAction {
     StartDestroyBlock,
     AbortDestroyBlock,

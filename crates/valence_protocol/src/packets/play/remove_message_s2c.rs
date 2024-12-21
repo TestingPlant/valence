@@ -1,7 +1,7 @@
 use super::chat_message_s2c::MessageSignature;
-use crate::{Decode, Encode, Packet};
+use crate::{DecodeBytes, Encode, Packet};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct RemoveMessageS2c<'a> {
     pub signature: MessageSignature<'a>,
 }

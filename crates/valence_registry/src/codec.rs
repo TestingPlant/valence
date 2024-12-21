@@ -20,14 +20,14 @@ pub(super) fn build(app: &mut App) {
 /// one of the other registry resources instead.
 #[derive(Resource, Debug)]
 pub struct RegistryCodec {
-    pub registries: BTreeMap<Ident<String>, Vec<RegistryValue>>,
+    pub registries: BTreeMap<Ident, Vec<RegistryValue>>,
     // TODO: store this in binary form?
     cached_codec: Compound,
 }
 
 #[derive(Clone, Debug)]
 pub struct RegistryValue {
-    pub name: Ident<String>,
+    pub name: Ident,
     pub element: Compound,
 }
 
@@ -36,13 +36,13 @@ impl RegistryCodec {
         &self.cached_codec
     }
 
-    pub fn registry(&self, registry_key: Ident<&str>) -> &Vec<RegistryValue> {
+    pub fn registry(&self, registry_key: Ident) -> &Vec<RegistryValue> {
         self.registries
             .get(registry_key.as_str())
             .unwrap_or_else(|| panic!("missing registry for {registry_key}"))
     }
 
-    pub fn registry_mut(&mut self, registry_key: Ident<&str>) -> &mut Vec<RegistryValue> {
+    pub fn registry_mut(&mut self, registry_key: Ident) -> &mut Vec<RegistryValue> {
         self.registries
             .get_mut(registry_key.as_str())
             .unwrap_or_else(|| panic!("missing registry for {registry_key}"))
@@ -59,7 +59,7 @@ impl Default for RegistryCodec {
         let mut registries = BTreeMap::new();
 
         for (k, v) in compound {
-            let reg_name: Ident<String> = Ident::new(k).expect("invalid registry name").into();
+            let reg_name: Ident = Ident::new(k).expect("invalid registry name").into();
             let mut reg_values = vec![];
 
             let Value::Compound(mut outer) = v else {

@@ -3,10 +3,10 @@ use std::io::Write;
 pub use valence_generated::item::ItemKind;
 use valence_nbt::Compound;
 
-use crate::{Decode, Encode};
+use crate::{Decode, DecodeBytesAuto, Encode};
 
 /// A stack of items in an inventory.
-#[derive(Clone, PartialEq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug, Default, DecodeBytesAuto)]
 pub struct ItemStack {
     pub item: ItemKind,
     pub count: i8,
@@ -70,7 +70,7 @@ impl Encode for ItemStack {
     }
 }
 
-impl Decode<'_> for ItemStack {
+impl Decode for ItemStack {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let present = bool::decode(r)?;
         if !present {

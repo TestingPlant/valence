@@ -3,10 +3,11 @@ use std::io::Write;
 
 use bitfield_struct::bitfield;
 use uuid::Uuid;
+use valence_bytes::{Bytes, CowBytes, CowUtf8Bytes};
 use valence_text::Text;
 
 use crate::profile::Property;
-use crate::{Decode, Encode, GameMode, Packet, VarInt};
+use crate::{DecodeBytes, Encode, GameMode, Packet, VarInt};
 
 #[derive(Clone, Debug, Packet)]
 pub struct PlayerListS2c<'a> {
@@ -54,41 +55,41 @@ impl<'a> Encode for PlayerListS2c<'a> {
     }
 }
 
-impl<'a> Decode<'a> for PlayerListS2c<'a> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let actions = PlayerListActions(u8::decode(r)?);
+impl<'a> DecodeBytes for PlayerListS2c<'a> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let actions = PlayerListActions(u8::decode_bytes(r)?);
 
         let mut entries = vec![];
 
-        for _ in 0..VarInt::decode(r)?.0 {
+        for _ in 0..VarInt::decode_bytes(r)?.0 {
             let mut entry = PlayerListEntry {
-                player_uuid: Uuid::decode(r)?,
+                player_uuid: Uuid::decode_bytes(r)?,
                 ..Default::default()
             };
 
             if actions.add_player() {
-                entry.username = Decode::decode(r)?;
-                entry.properties = Decode::decode(r)?;
+                entry.username = DecodeBytes::decode_bytes(r)?;
+                entry.properties = DecodeBytes::decode_bytes(r)?;
             }
 
             if actions.initialize_chat() {
-                entry.chat_data = Decode::decode(r)?;
+                entry.chat_data = DecodeBytes::decode_bytes(r)?;
             }
 
             if actions.update_game_mode() {
-                entry.game_mode = Decode::decode(r)?;
+                entry.game_mode = DecodeBytes::decode_bytes(r)?;
             }
 
             if actions.update_listed() {
-                entry.listed = Decode::decode(r)?;
+                entry.listed = DecodeBytes::decode_bytes(r)?;
             }
 
             if actions.update_latency() {
-                entry.ping = VarInt::decode(r)?.0;
+                entry.ping = VarInt::decode_bytes(r)?.0;
             }
 
             if actions.update_display_name() {
-                entry.display_name = Decode::decode(r)?;
+                entry.display_name = DecodeBytes::decode_bytes(r)?;
             }
 
             entries.push(entry);
@@ -116,7 +117,7 @@ pub struct PlayerListActions {
 #[derive(Clone, Default, Debug)]
 pub struct PlayerListEntry<'a> {
     pub player_uuid: Uuid,
-    pub username: &'a str,
+    pub username: CowUtf8Bytes<'a>,
     pub properties: Cow<'a, [Property]>,
     pub chat_data: Option<ChatData<'a>>,
     pub listed: bool,
@@ -125,11 +126,11 @@ pub struct PlayerListEntry<'a> {
     pub display_name: Option<Cow<'a, Text>>,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, DecodeBytes)]
 pub struct ChatData<'a> {
     pub session_id: Uuid,
     /// Unix timestamp in milliseconds.
     pub key_expiry_time: i64,
-    pub public_key: &'a [u8],
-    pub public_key_signature: &'a [u8],
+    pub public_key: CowBytes<'a>,
+    pub public_key_signature: CowBytes<'a>,
 }

@@ -1,8 +1,8 @@
 use valence_math::Vec3;
 
-use crate::{BlockPos, Decode, Direction, Encode, Hand, Packet, VarInt};
+use crate::{BlockPos, Decode, DecodeBytesAuto, Direction, Encode, Hand, Packet, VarInt};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct PlayerInteractBlockC2s {
     pub hand: Hand,
     pub position: BlockPos,

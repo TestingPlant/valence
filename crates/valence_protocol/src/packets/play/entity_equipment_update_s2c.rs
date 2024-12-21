@@ -1,14 +1,14 @@
 use std::io::Write;
 
-use crate::{Decode, Encode, ItemStack, Packet, VarInt};
+use crate::{Decode, DecodeBytesAuto, Encode, ItemStack, Packet, VarInt};
 
-#[derive(Clone, PartialEq, Debug, Packet)]
+#[derive(Clone, PartialEq, Debug, Packet, DecodeBytesAuto)]
 pub struct EntityEquipmentUpdateS2c {
     pub entity_id: VarInt,
     pub equipment: Vec<EquipmentEntry>,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub struct EquipmentEntry {
     pub slot: i8,
     pub item: ItemStack,
@@ -32,8 +32,8 @@ impl Encode for EntityEquipmentUpdateS2c {
     }
 }
 
-impl<'a> Decode<'a> for EntityEquipmentUpdateS2c {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl Decode for EntityEquipmentUpdateS2c {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let entity_id = VarInt::decode(r)?;
 
         let mut equipment = vec![];

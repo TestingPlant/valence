@@ -1,13 +1,13 @@
-use std::borrow::Cow;
 use std::io::Write;
 
 use anyhow::bail;
 use byteorder::WriteBytesExt;
+use valence_bytes::{Bytes, Utf8Bytes};
 use valence_ident::Ident;
 
-use crate::{Decode, Encode, Packet, VarInt};
+use crate::{Decode, DecodeBytes, DecodeBytesAuto, Encode, Packet, VarInt};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct CommandTreeS2c {
     pub commands: Vec<Node>,
     pub root_index: VarInt,
@@ -25,10 +25,10 @@ pub struct Node {
 pub enum NodeData {
     Root,
     Literal {
-        name: String,
+        name: Utf8Bytes,
     },
     Argument {
-        name: String,
+        name: Utf8Bytes,
         parser: Parser,
         suggestion: Option<Suggestion>,
     },
@@ -86,16 +86,16 @@ pub enum Parser {
     Dimension,
     GameMode,
     Time,
-    ResourceOrTag { registry: Ident<String> },
-    ResourceOrTagKey { registry: Ident<String> },
-    Resource { registry: Ident<String> },
-    ResourceKey { registry: Ident<String> },
+    ResourceOrTag { registry: Ident },
+    ResourceOrTagKey { registry: Ident },
+    Resource { registry: Ident },
+    ResourceKey { registry: Ident },
     TemplateMirror,
     TemplateRotation,
     Uuid,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum StringArg {
     SingleWord,
     QuotablePhrase,
@@ -161,14 +161,14 @@ impl Encode for Node {
     }
 }
 
-impl<'a> Decode<'a> for Node {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let flags = u8::decode(r)?;
+impl DecodeBytes for Node {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let flags = u8::decode_bytes(r)?;
 
-        let children = Vec::decode(r)?;
+        let children = Vec::decode_bytes(r)?;
 
         let redirect_node = if flags & 0x08 != 0 {
-            Some(VarInt::decode(r)?)
+            Some(VarInt::decode_bytes(r)?)
         } else {
             None
         };
@@ -176,13 +176,13 @@ impl<'a> Decode<'a> for Node {
         let node_data = match flags & 0x3 {
             0 => NodeData::Root,
             1 => NodeData::Literal {
-                name: <String>::decode(r)?,
+                name: Utf8Bytes::decode_bytes(r)?,
             },
             2 => NodeData::Argument {
-                name: <String>::decode(r)?,
-                parser: Parser::decode(r)?,
+                name: Utf8Bytes::decode_bytes(r)?,
+                parser: Parser::decode_bytes(r)?,
                 suggestion: if flags & 0x10 != 0 {
-                    Some(match Ident::<Cow<str>>::decode(r)?.as_str() {
+                    Some(match Utf8Bytes::decode_bytes(r)?.as_ref() {
                         "minecraft:ask_server" => Suggestion::AskServer,
                         "minecraft:all_recipes" => Suggestion::AllRecipes,
                         "minecraft:available_sounds" => Suggestion::AvailableSounds,
@@ -335,21 +335,19 @@ impl Encode for Parser {
     }
 }
 
-impl<'a> Decode<'a> for Parser {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        fn decode_min_max<'a, T: Decode<'a>>(
-            r: &mut &'a [u8],
-        ) -> anyhow::Result<(Option<T>, Option<T>)> {
-            let flags = u8::decode(r)?;
+impl DecodeBytes for Parser {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        fn decode_min_max<T: DecodeBytes>(r: &mut Bytes) -> anyhow::Result<(Option<T>, Option<T>)> {
+            let flags = u8::decode_bytes(r)?;
 
             let min = if flags & 0x1 != 0 {
-                Some(T::decode(r)?)
+                Some(T::decode_bytes(r)?)
             } else {
                 None
             };
 
             let max = if flags & 0x2 != 0 {
-                Some(T::decode(r)?)
+                Some(T::decode_bytes(r)?)
             } else {
                 None
             };
@@ -357,7 +355,7 @@ impl<'a> Decode<'a> for Parser {
             Ok((min, max))
         }
 
-        Ok(match u8::decode(r)? {
+        Ok(match u8::decode_bytes(r)? {
             0 => Self::Bool,
             1 => {
                 let (min, max) = decode_min_max(r)?;
@@ -375,9 +373,9 @@ impl<'a> Decode<'a> for Parser {
                 let (min, max) = decode_min_max(r)?;
                 Self::Long { min, max }
             }
-            5 => Self::String(StringArg::decode(r)?),
+            5 => Self::String(StringArg::decode_bytes(r)?),
             6 => {
-                let flags = u8::decode(r)?;
+                let flags = u8::decode_bytes(r)?;
                 Self::Entity {
                     single: flags & 0x1 != 0,
                     only_players: flags & 0x2 != 0,
@@ -406,7 +404,7 @@ impl<'a> Decode<'a> for Parser {
             27 => Self::Rotation,
             28 => Self::ScoreboardSlot,
             29 => Self::ScoreHolder {
-                allow_multiple: bool::decode(r)?,
+                allow_multiple: bool::decode_bytes(r)?,
             },
             30 => Self::Swizzle,
             31 => Self::Team,
@@ -420,16 +418,16 @@ impl<'a> Decode<'a> for Parser {
             39 => Self::GameMode,
             40 => Self::Time,
             41 => Self::ResourceOrTag {
-                registry: Ident::decode(r)?,
+                registry: Ident::decode_bytes(r)?,
             },
             42 => Self::ResourceOrTagKey {
-                registry: Ident::decode(r)?,
+                registry: Ident::decode_bytes(r)?,
             },
             43 => Self::Resource {
-                registry: Ident::decode(r)?,
+                registry: Ident::decode_bytes(r)?,
             },
             44 => Self::ResourceKey {
-                registry: Ident::decode(r)?,
+                registry: Ident::decode_bytes(r)?,
             },
             45 => Self::TemplateMirror,
             46 => Self::TemplateRotation,

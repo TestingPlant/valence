@@ -1,6 +1,6 @@
-use crate::{packet_id, Decode, Encode, Packet, VarInt};
+use crate::{packet_id, Decode, DecodeBytesAuto, Encode, Packet, VarInt};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 #[packet(id = packet_id::MOVE_RELATIVE)]
 pub struct MoveRelativeS2c {
     pub entity_id: VarInt,

@@ -3,35 +3,36 @@
 use std::borrow::Cow;
 use std::io::Write;
 
+use valence_bytes::{Bytes, CowUtf8Bytes};
 use valence_ident::Ident;
 use valence_text::Text;
 
-use crate::{packet_id, Decode, Encode, ItemStack, Packet, VarInt};
+use crate::{packet_id, DecodeBytes, Encode, ItemStack, Packet, VarInt};
 
 pub type AdvancementUpdateS2c<'a> =
-    GenericAdvancementUpdateS2c<'a, (Ident<Cow<'a, str>>, Advancement<'a, ItemStack>)>;
+    GenericAdvancementUpdateS2c<(Ident, Advancement<'a, ItemStack>)>;
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 #[packet(id = packet_id::ADVANCEMENT_UPDATE_S2C)]
-pub struct GenericAdvancementUpdateS2c<'a, AM: 'a> {
+pub struct GenericAdvancementUpdateS2c<AM> {
     pub reset: bool,
     pub advancement_mapping: Vec<AM>,
-    pub identifiers: Vec<Ident<Cow<'a, str>>>,
-    pub progress_mapping: Vec<(Ident<Cow<'a, str>>, Vec<AdvancementCriteria<'a>>)>,
+    pub identifiers: Vec<Ident>,
+    pub progress_mapping: Vec<(Ident, Vec<AdvancementCriteria>)>,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, DecodeBytes)]
 pub struct Advancement<'a, I> {
-    pub parent_id: Option<Ident<Cow<'a, str>>>,
+    pub parent_id: Option<Ident>,
     pub display_data: Option<AdvancementDisplay<'a, I>>,
-    pub criteria: Vec<(Ident<Cow<'a, str>>, ())>,
+    pub criteria: Vec<(Ident, ())>,
     pub requirements: Vec<AdvancementRequirements<'a>>,
     pub sends_telemetry_data: bool,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Eq, Debug, Encode, DecodeBytes)]
 pub struct AdvancementRequirements<'a> {
-    pub requirement: Vec<&'a str>,
+    pub requirement: Vec<CowUtf8Bytes<'a>>,
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -41,14 +42,14 @@ pub struct AdvancementDisplay<'a, I> {
     pub icon: I,
     pub frame_type: VarInt,
     pub flags: i32,
-    pub background_texture: Option<Ident<Cow<'a, str>>>,
+    pub background_texture: Option<Ident>,
     pub x_coord: f32,
     pub y_coord: f32,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Encode, Decode)]
-pub struct AdvancementCriteria<'a> {
-    pub criterion_identifier: Ident<Cow<'a, str>>,
+#[derive(Clone, PartialEq, Eq, Debug, Encode, DecodeBytes)]
+pub struct AdvancementCriteria {
+    pub criterion_identifier: Ident,
     /// If present, the criteria has been achieved at the
     /// time wrapped; time represented as millis since epoch
     pub criterion_progress: Option<i64>,
@@ -74,22 +75,22 @@ impl<I: Encode> Encode for AdvancementDisplay<'_, I> {
     }
 }
 
-impl<'a, I: Decode<'a>> Decode<'a> for AdvancementDisplay<'a, I> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let title = <Cow<'a, Text>>::decode(r)?;
-        let description = <Cow<'a, Text>>::decode(r)?;
-        let icon = I::decode(r)?;
-        let frame_type = VarInt::decode(r)?;
-        let flags = i32::decode(r)?;
+impl<I: DecodeBytes> DecodeBytes for AdvancementDisplay<'static, I> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let title = <Cow<'static, Text>>::decode_bytes(r)?;
+        let description = <Cow<'static, Text>>::decode_bytes(r)?;
+        let icon = I::decode_bytes(r)?;
+        let frame_type = VarInt::decode_bytes(r)?;
+        let flags = i32::decode_bytes(r)?;
 
         let background_texture = if flags & 1 == 1 {
-            Some(Ident::decode(r)?)
+            Some(Ident::decode_bytes(r)?)
         } else {
             None
         };
 
-        let x_coord = f32::decode(r)?;
-        let y_coord = f32::decode(r)?;
+        let x_coord = f32::decode_bytes(r)?;
+        let y_coord = f32::decode_bytes(r)?;
 
         Ok(Self {
             title,

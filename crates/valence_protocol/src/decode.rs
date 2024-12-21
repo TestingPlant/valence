@@ -214,9 +214,9 @@ impl PacketFrame {
     /// Attempts to decode this packet as type `P`. An error is returned if the
     /// packet ID does not match, the body of the packet failed to decode, or
     /// some input was missed.
-    pub fn decode<'a, P>(&'a self) -> anyhow::Result<P>
+    pub fn decode<P>(&self) -> anyhow::Result<P>
     where
-        P: Packet + Decode<'a>,
+        P: Packet + Decode
     {
         ensure!(
             P::ID == self.id,

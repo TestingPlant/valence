@@ -1,6 +1,6 @@
-use crate::{BlockPos, Decode, Encode, Packet, VarInt};
+use crate::{BlockPos, Decode, DecodeBytesAuto, Encode, Packet, VarInt};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Copy, Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct JigsawGeneratingC2s {
     pub position: BlockPos,
     pub levels: VarInt,

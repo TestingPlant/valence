@@ -5,9 +5,9 @@ use anyhow::bail;
 use valence_generated::block::BlockState;
 use valence_math::{DVec3, Vec3};
 
-use crate::{BlockPos, Decode, Encode, ItemStack, Packet, VarInt};
+use crate::{decode_str, BlockPos, Decode, DecodeBytesAuto, Encode, ItemStack, Packet, VarInt};
 
-#[derive(Clone, Debug, Packet)]
+#[derive(Clone, Debug, Packet, DecodeBytesAuto)]
 pub struct ParticleS2c<'a> {
     pub particle: Cow<'a, Particle>,
     pub long_distance: bool,
@@ -30,8 +30,8 @@ impl Encode for ParticleS2c<'_> {
     }
 }
 
-impl<'a> Decode<'a> for ParticleS2c<'a> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl<'a> Decode for ParticleS2c<'a> {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let particle_id = VarInt::decode(r)?.0;
         let long_distance = bool::decode(r)?;
         let position = Decode::decode(r)?;
@@ -325,7 +325,7 @@ impl Particle {
             38 => Particle::Heart,
             39 => Particle::InstantEffect,
             40 => Particle::Item(Decode::decode(r)?),
-            41 => match <&str>::decode(r)? {
+            41 => match decode_str(r)? {
                 "block" => Particle::VibrationBlock {
                     block_pos: BlockPos::decode(r)?,
                     ticks: VarInt::decode(r)?.0,

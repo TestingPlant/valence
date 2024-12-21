@@ -323,14 +323,14 @@ fn send_advancement_update_packet(
 
 /// Advancement's id. May not be updated.
 #[derive(Component, Deref)]
-pub struct Advancement(Ident<Cow<'static, str>>);
+pub struct Advancement(Ident);
 
 impl Advancement {
-    pub fn new(ident: Ident<Cow<'static, str>>) -> Advancement {
+    pub fn new(ident: Ident) -> Advancement {
         Self(ident)
     }
 
-    pub fn get(&self) -> &Ident<Cow<'static, str>> {
+    pub fn get(&self) -> &Ident {
         &self.0
     }
 }
@@ -351,7 +351,7 @@ pub struct AdvancementDisplay {
     pub frame_type: AdvancementFrameType,
     pub show_toast: bool,
     pub hidden: bool,
-    pub background_texture: Option<Ident<Cow<'static, str>>>,
+    pub background_texture: Option<Ident>,
     pub x_coord: f32,
     pub y_coord: f32,
 }
@@ -368,14 +368,14 @@ impl AdvancementDisplay {
 
 /// Criteria's identifier. May not be updated
 #[derive(Component, Deref)]
-pub struct AdvancementCriteria(Ident<Cow<'static, str>>);
+pub struct AdvancementCriteria(Ident);
 
 impl AdvancementCriteria {
-    pub fn new(ident: Ident<Cow<'static, str>>) -> Self {
+    pub fn new(ident: Ident) -> Self {
         Self(ident)
     }
 
-    pub fn get(&self) -> &Ident<Cow<'static, str>> {
+    pub fn get(&self) -> &Ident {
         &self.0
     }
 }

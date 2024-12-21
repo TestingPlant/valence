@@ -34,7 +34,7 @@ use paste::paste;
 use tracing::warn;
 use tracked_data::TrackedData;
 use valence_math::{DVec3, Vec3};
-use valence_protocol::{Decode, Encode, VarInt};
+use valence_protocol::{Decode, DecodeBytesAuto, Encode, VarInt};
 use valence_server_common::{Despawned, UniqueId};
 
 use crate::attributes::TrackedEntityAttributes;
@@ -396,7 +396,7 @@ impl EntityAnimations {
 #[derive(Component, Default, Debug, Deref, DerefMut)]
 pub struct ObjectData(pub i32);
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, DecodeBytesAuto)]
 pub struct VillagerData {
     pub kind: VillagerKind,
     pub profession: VillagerProfession,
@@ -431,7 +431,7 @@ impl Encode for VillagerData {
     }
 }
 
-impl Decode<'_> for VillagerData {
+impl Decode for VillagerData {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         Ok(Self {
             kind: VillagerKind::decode(r)?,
@@ -441,7 +441,20 @@ impl Decode<'_> for VillagerData {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Debug, Encode, Decode)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Default,
+    Debug,
+    Encode,
+    Decode,
+    DecodeBytesAuto,
+)]
 pub enum VillagerKind {
     Desert,
     Jungle,
@@ -453,7 +466,20 @@ pub enum VillagerKind {
     Taiga,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Debug, Encode, Decode)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Default,
+    Debug,
+    Encode,
+    Decode,
+    DecodeBytesAuto,
+)]
 pub enum VillagerProfession {
     #[default]
     None,
@@ -473,7 +499,20 @@ pub enum VillagerProfession {
     Weaponsmith,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Debug, Encode, Decode)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Default,
+    Debug,
+    Encode,
+    Decode,
+    DecodeBytesAuto,
+)]
 pub enum Pose {
     #[default]
     Standing,
@@ -492,7 +531,20 @@ pub enum Pose {
     Digging,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Debug, Encode, Decode)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Default,
+    Debug,
+    Encode,
+    Decode,
+    DecodeBytesAuto,
+)]
 pub enum BoatKind {
     #[default]
     Oak,
@@ -503,7 +555,20 @@ pub enum BoatKind {
     DarkOak,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Debug, Encode, Decode)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Default,
+    Debug,
+    Encode,
+    Decode,
+    DecodeBytesAuto,
+)]
 pub enum CatKind {
     Tabby,
     #[default]
@@ -519,7 +584,20 @@ pub enum CatKind {
     AllBlack,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Debug, Encode, Decode)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Default,
+    Debug,
+    Encode,
+    Decode,
+    DecodeBytesAuto,
+)]
 pub enum FrogKind {
     #[default]
     Temperate,
@@ -527,7 +605,20 @@ pub enum FrogKind {
     Cold,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Debug, Encode, Decode)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Default,
+    Debug,
+    Encode,
+    Decode,
+    DecodeBytesAuto,
+)]
 pub enum PaintingKind {
     #[default]
     Kebab,
@@ -562,7 +653,20 @@ pub enum PaintingKind {
     DonkeyKong,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Debug, Encode, Decode)]
+#[derive(
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Default,
+    Debug,
+    Encode,
+    Decode,
+    DecodeBytesAuto,
+)]
 pub enum SnifferState {
     #[default]
     Idling,
@@ -574,14 +678,14 @@ pub enum SnifferState {
     Rising,
 }
 
-#[derive(Clone, Copy, PartialEq, PartialOrd, Debug, Encode, Decode)]
+#[derive(Clone, Copy, PartialEq, PartialOrd, Debug, Encode, Decode, DecodeBytesAuto)]
 pub struct EulerAngle {
     pub pitch: f32,
     pub yaw: f32,
     pub roll: f32,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, DecodeBytesAuto)]
 struct OptionalInt(Option<i32>);
 
 impl Encode for OptionalInt {
@@ -595,7 +699,7 @@ impl Encode for OptionalInt {
     }
 }
 
-impl Decode<'_> for OptionalInt {
+impl Decode for OptionalInt {
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let n = VarInt::decode(r)?.0;
 

@@ -1,16 +1,17 @@
 use bevy_ecs::prelude::Component;
+use valence_bytes::CowUtf8Bytes;
 
 use super::team_s2c::TeamColor;
-use crate::{Decode, Encode, Packet};
+use crate::{Decode, DecodeBytes, DecodeBytesAuto, Encode, Packet};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct ScoreboardDisplayS2c<'a> {
     pub position: ScoreboardPosition,
-    pub score_name: &'a str,
+    pub score_name: CowUtf8Bytes<'a>,
 }
 
 /// Defines where a scoreboard is displayed.
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Component, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Component, Default, DecodeBytesAuto)]
 pub enum ScoreboardPosition {
     /// Display the scoreboard in the player list (the one you see when you
     /// press tab), as a yellow number next to players' names.
@@ -53,8 +54,8 @@ impl Encode for ScoreboardPosition {
     }
 }
 
-impl<'a> Decode<'a> for ScoreboardPosition {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl Decode for ScoreboardPosition {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let value = u8::decode(r)?;
         match value {
             0 => Ok(ScoreboardPosition::List),

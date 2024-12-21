@@ -5,15 +5,15 @@ use bitfield_struct::bitfield;
 use uuid::Uuid;
 use valence_text::Text;
 
-use crate::{Decode, Encode, Packet};
+use crate::{Decode, DecodeBytesAuto, Encode, Packet};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, Decode, DecodeBytesAuto, Packet)]
 pub struct BossBarS2c<'a> {
     pub id: Uuid,
     pub action: BossBarAction<'a>,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum BossBarAction<'a> {
     Add {
         title: Cow<'a, Text>,
@@ -30,7 +30,7 @@ pub enum BossBarAction<'a> {
 }
 
 /// The color of a boss bar.
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto, Default)]
 pub enum BossBarColor {
     #[default]
     Pink,
@@ -43,7 +43,7 @@ pub enum BossBarColor {
 }
 
 /// The division of a boss bar.
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto, Default)]
 pub enum BossBarDivision {
     #[default]
     NoDivision,
@@ -55,7 +55,7 @@ pub enum BossBarDivision {
 
 /// The flags of a boss bar (darken sky, dragon bar, create fog).
 #[bitfield(u8)]
-#[derive(PartialEq, Eq, Encode, Decode, Component)]
+#[derive(PartialEq, Eq, Encode, Decode, DecodeBytesAuto, Component)]
 pub struct BossBarFlags {
     pub darken_sky: bool,
     pub dragon_bar: bool,

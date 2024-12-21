@@ -1,8 +1,10 @@
-use crate::{Decode, Encode, Packet, PacketState};
+use valence_bytes::CowBytes;
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+use crate::{DecodeBytes, Encode, Packet, PacketState};
+
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 #[packet(state = PacketState::Login)]
 pub struct LoginKeyC2s<'a> {
-    pub shared_secret: &'a [u8],
-    pub verify_token: &'a [u8],
+    pub shared_secret: CowBytes<'a>,
+    pub verify_token: CowBytes<'a>,
 }

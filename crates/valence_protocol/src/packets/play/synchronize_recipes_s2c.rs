@@ -2,20 +2,21 @@ use std::borrow::Cow;
 use std::io::Write;
 
 use anyhow::ensure;
+use valence_bytes::CowUtf8Bytes;
 use valence_ident::Ident;
 
-use crate::{Decode, Encode, ItemStack, Packet, RawBytes};
+use crate::{Decode, DecodeBytes, DecodeBytesAuto, Encode, ItemStack, Packet, RawBytes};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
-pub struct SynchronizeRecipesS2c<'a> {
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
+pub struct SynchronizeRecipesS2c {
     // TODO: this should be a Vec<Recipe<'a>>
-    pub recipes: RawBytes<'a>,
+    pub recipes: RawBytes,
 }
 
 #[derive(Clone, Debug, Encode)]
 pub struct Recipe<'a> {
-    pub kind: Ident<Cow<'a, str>>,
-    pub recipe_id: Ident<Cow<'a, str>>,
+    pub kind: Ident,
+    pub recipe_id: Ident,
     pub data: RecipeData<'a>,
 }
 
@@ -51,7 +52,7 @@ pub enum RecipeData<'a> {
 pub struct CraftingShapedData<'a> {
     pub width: u32,
     pub height: u32,
-    pub group: &'a str,
+    pub group: CowUtf8Bytes<'a>,
     pub category: CraftingShapedCategory,
     /// Length must be width * height.
     pub ingredients: Cow<'a, [Ingredient<'a>]>,
@@ -95,7 +96,7 @@ impl Encode for CraftingShapedData<'_> {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum CraftingShapedCategory {
     Building,
     Redstone,

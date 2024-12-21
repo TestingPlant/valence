@@ -1,16 +1,17 @@
 use bitfield_struct::bitfield;
+use valence_bytes::CowUtf8Bytes;
 
-use crate::{BlockPos, Decode, Encode, Packet};
+use crate::{BlockPos, Decode, DecodeBytes, DecodeBytesAuto, Encode, Packet};
 
-#[derive(Copy, Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct UpdateCommandBlockC2s<'a> {
     pub position: BlockPos,
-    pub command: &'a str,
+    pub command: CowUtf8Bytes<'a>,
     pub mode: UpdateCommandBlockMode,
     pub flags: UpdateCommandBlockFlags,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum UpdateCommandBlockMode {
     Sequence,
     Auto,
@@ -18,7 +19,7 @@ pub enum UpdateCommandBlockMode {
 }
 
 #[bitfield(u8)]
-#[derive(PartialEq, Eq, Encode, Decode)]
+#[derive(PartialEq, Eq, Encode, Decode, DecodeBytesAuto)]
 pub struct UpdateCommandBlockFlags {
     pub track_output: bool,
     pub conditional: bool,

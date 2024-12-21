@@ -1,9 +1,10 @@
 use std::io::Write;
 
 use anyhow::ensure;
+use bytes::Bytes;
 
 use crate::var_int::VarInt;
-use crate::{Decode, Encode};
+use crate::{Decode, DecodeBytes, Encode};
 
 /// A fixed-size array encoded and decoded with a [`VarInt`] length prefix.
 ///
@@ -20,8 +21,8 @@ impl<T: Encode, const N: usize> Encode for FixedArray<T, N> {
     }
 }
 
-impl<'a, T: Decode<'a>, const N: usize> Decode<'a> for FixedArray<T, N> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
+impl<T: Decode, const N: usize> Decode for FixedArray<T, N> {
+    fn decode(r: &mut &[u8]) -> anyhow::Result<Self> {
         let len = VarInt::decode(r)?.0;
         ensure!(
             len == N as i32,
@@ -29,6 +30,18 @@ impl<'a, T: Decode<'a>, const N: usize> Decode<'a> for FixedArray<T, N> {
         );
 
         <[T; N]>::decode(r).map(FixedArray)
+    }
+}
+
+impl<T: DecodeBytes, const N: usize> DecodeBytes for FixedArray<T, N> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        let len = VarInt::decode_bytes(r)?.0;
+        ensure!(
+            len == N as i32,
+            "unexpected length of {len} for fixed-sized array of length {N}"
+        );
+
+        <[T; N]>::decode_bytes(r).map(FixedArray)
     }
 }
 

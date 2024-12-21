@@ -62,9 +62,9 @@ impl PacketEvent {
     /// If the packet ID is mismatched or an error occurs, `None` is returned.
     /// Otherwise, `Some` is returned containing the decoded packet.
     #[inline]
-    pub fn decode<'a, P>(&'a self) -> Option<P>
+    pub fn decode<P>(&self) -> Option<P>
     where
-        P: Packet + Decode<'a>,
+        P: Packet + Decode,
     {
         if self.id == P::ID {
             let mut r = &self.data[..];

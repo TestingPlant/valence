@@ -1,6 +1,6 @@
-use crate::{Decode, Encode};
+use crate::{Decode, DecodeBytesAuto, Encode};
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum Difficulty {
     Peaceful,
     Easy,

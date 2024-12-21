@@ -3,13 +3,14 @@ use std::io::Write;
 
 use anyhow::bail;
 use bitfield_struct::bitfield;
+use valence_bytes::{Bytes, CowUtf8Bytes, Utf8Bytes};
 use valence_text::Text;
 
-use crate::{Decode, Encode, Packet};
+use crate::{Decode, DecodeBytes, DecodeBytesAuto, Encode, Packet};
 
-#[derive(Clone, Debug, Encode, Decode, Packet)]
+#[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
 pub struct TeamS2c<'a> {
-    pub team_name: &'a str,
+    pub team_name: CowUtf8Bytes<'a>,
     pub mode: Mode<'a>,
 }
 
@@ -23,7 +24,7 @@ pub enum Mode<'a> {
         team_color: TeamColor,
         team_prefix: Cow<'a, Text>,
         team_suffix: Cow<'a, Text>,
-        entities: Vec<&'a str>,
+        entities: Vec<CowUtf8Bytes<'a>>,
     },
     RemoveTeam,
     UpdateTeamInfo {
@@ -36,10 +37,10 @@ pub enum Mode<'a> {
         team_suffix: Cow<'a, Text>,
     },
     AddEntities {
-        entities: Vec<&'a str>,
+        entities: Vec<CowUtf8Bytes<'a>>,
     },
     RemoveEntities {
-        entities: Vec<&'a str>,
+        entities: Vec<CowUtf8Bytes<'a>>,
     },
 }
 
@@ -122,58 +123,58 @@ impl Encode for Mode<'_> {
     }
 }
 
-impl<'a> Decode<'a> for Mode<'a> {
-    fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        Ok(match i8::decode(r)? {
+impl<'a> DecodeBytes for Mode<'a> {
+    fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
+        Ok(match i8::decode_bytes(r)? {
             0 => Self::CreateTeam {
-                team_display_name: Decode::decode(r)?,
-                friendly_flags: Decode::decode(r)?,
-                name_tag_visibility: match <&str>::decode(r)? {
+                team_display_name: DecodeBytes::decode_bytes(r)?,
+                friendly_flags: DecodeBytes::decode_bytes(r)?,
+                name_tag_visibility: match Utf8Bytes::decode_bytes(r)?.as_ref() {
                     "always" => NameTagVisibility::Always,
                     "never" => NameTagVisibility::Never,
                     "hideForOtherTeams" => NameTagVisibility::HideForOtherTeams,
                     "hideForOwnTeam" => NameTagVisibility::HideForOwnTeam,
                     other => bail!("unknown name tag visibility type \"{other}\""),
                 },
-                collision_rule: match <&str>::decode(r)? {
+                collision_rule: match Utf8Bytes::decode_bytes(r)?.as_ref() {
                     "always" => CollisionRule::Always,
                     "never" => CollisionRule::Never,
                     "pushOtherTeams" => CollisionRule::PushOtherTeams,
                     "pushOwnTeam" => CollisionRule::PushOwnTeam,
                     other => bail!("unknown collision rule type \"{other}\""),
                 },
-                team_color: Decode::decode(r)?,
-                team_prefix: Decode::decode(r)?,
-                team_suffix: Decode::decode(r)?,
-                entities: Decode::decode(r)?,
+                team_color: DecodeBytes::decode_bytes(r)?,
+                team_prefix: DecodeBytes::decode_bytes(r)?,
+                team_suffix: DecodeBytes::decode_bytes(r)?,
+                entities: DecodeBytes::decode_bytes(r)?,
             },
             1 => Self::RemoveTeam,
             2 => Self::UpdateTeamInfo {
-                team_display_name: Decode::decode(r)?,
-                friendly_flags: Decode::decode(r)?,
-                name_tag_visibility: match <&str>::decode(r)? {
+                team_display_name: DecodeBytes::decode_bytes(r)?,
+                friendly_flags: DecodeBytes::decode_bytes(r)?,
+                name_tag_visibility: match Utf8Bytes::decode_bytes(r)?.as_ref() {
                     "always" => NameTagVisibility::Always,
                     "never" => NameTagVisibility::Never,
                     "hideForOtherTeams" => NameTagVisibility::HideForOtherTeams,
                     "hideForOwnTeam" => NameTagVisibility::HideForOwnTeam,
                     other => bail!("unknown name tag visibility type \"{other}\""),
                 },
-                collision_rule: match <&str>::decode(r)? {
+                collision_rule: match Utf8Bytes::decode_bytes(r)?.as_ref() {
                     "always" => CollisionRule::Always,
                     "never" => CollisionRule::Never,
                     "pushOtherTeams" => CollisionRule::PushOtherTeams,
                     "pushOwnTeam" => CollisionRule::PushOwnTeam,
                     other => bail!("unknown collision rule type \"{other}\""),
                 },
-                team_color: Decode::decode(r)?,
-                team_prefix: Decode::decode(r)?,
-                team_suffix: Decode::decode(r)?,
+                team_color: DecodeBytes::decode_bytes(r)?,
+                team_prefix: DecodeBytes::decode_bytes(r)?,
+                team_suffix: DecodeBytes::decode_bytes(r)?,
             },
             3 => Self::AddEntities {
-                entities: Decode::decode(r)?,
+                entities: DecodeBytes::decode_bytes(r)?,
             },
             4 => Self::RemoveEntities {
-                entities: Decode::decode(r)?,
+                entities: DecodeBytes::decode_bytes(r)?,
             },
             n => bail!("unknown update teams action of {n}"),
         })
@@ -181,7 +182,7 @@ impl<'a> Decode<'a> for Mode<'a> {
 }
 
 #[bitfield(u8)]
-#[derive(PartialEq, Eq, Encode, Decode)]
+#[derive(PartialEq, Eq, Encode, Decode, DecodeBytesAuto)]
 pub struct TeamFlags {
     pub friendly_fire: bool,
     pub see_invisible_teammates: bool,
@@ -205,7 +206,7 @@ pub enum CollisionRule {
     PushOwnTeam,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeBytesAuto)]
 pub enum TeamColor {
     Black,
     DarkBlue,

@@ -58,7 +58,7 @@ impl Plugin for RegistryPlugin {
 
 #[derive(Clone, Debug)]
 pub struct Registry<I, V> {
-    items: IndexMap<Ident<String>, V>,
+    items: IndexMap<Ident, V>,
     _marker: PhantomData<I>,
 }
 
@@ -70,7 +70,7 @@ impl<I: RegistryIdx, V> Registry<I, V> {
         }
     }
 
-    pub fn insert(&mut self, name: impl Into<Ident<String>>, item: V) -> Option<I> {
+    pub fn insert(&mut self, name: impl Into<Ident>, item: V) -> Option<I> {
         if self.items.len() >= I::MAX {
             // Too many items in the registry.
             return None;
@@ -87,13 +87,13 @@ impl<I: RegistryIdx, V> Registry<I, V> {
         }
     }
 
-    pub fn swap_to_front(&mut self, name: Ident<&str>) {
+    pub fn swap_to_front(&mut self, name: Ident) {
         if let Some(idx) = self.items.get_index_of(name.as_str()) {
             self.items.swap_indices(0, idx);
         }
     }
 
-    pub fn remove(&mut self, name: Ident<&str>) -> Option<V> {
+    pub fn remove(&mut self, name: Ident) -> Option<V> {
         self.items.shift_remove(name.as_str())
     }
 
@@ -101,34 +101,32 @@ impl<I: RegistryIdx, V> Registry<I, V> {
         self.items.clear();
     }
 
-    pub fn get(&self, name: Ident<&str>) -> Option<&V> {
+    pub fn get(&self, name: Ident) -> Option<&V> {
         self.items.get(name.as_str())
     }
 
-    pub fn get_mut(&mut self, name: Ident<&str>) -> Option<&mut V> {
+    pub fn get_mut(&mut self, name: Ident) -> Option<&mut V> {
         self.items.get_mut(name.as_str())
     }
 
-    pub fn index_of(&self, name: Ident<&str>) -> Option<I> {
+    pub fn index_of(&self, name: Ident) -> Option<I> {
         self.items.get_index_of(name.as_str()).map(I::from_index)
     }
 
-    pub fn iter(
-        &self,
-    ) -> impl DoubleEndedIterator<Item = (I, Ident<&str>, &V)> + ExactSizeIterator + '_ {
+    pub fn iter(&self) -> impl DoubleEndedIterator<Item = (I, Ident, &V)> + ExactSizeIterator + '_ {
         self.items
             .iter()
             .enumerate()
-            .map(|(i, (k, v))| (I::from_index(i), k.as_str_ident(), v))
+            .map(|(i, (k, v))| (I::from_index(i), k.clone(), v))
     }
 
     pub fn iter_mut(
         &mut self,
-    ) -> impl DoubleEndedIterator<Item = (I, Ident<&str>, &mut V)> + ExactSizeIterator + '_ {
+    ) -> impl DoubleEndedIterator<Item = (I, Ident, &mut V)> + ExactSizeIterator + '_ {
         self.items
             .iter_mut()
             .enumerate()
-            .map(|(i, (k, v))| (I::from_index(i), k.as_str_ident(), v))
+            .map(|(i, (k, v))| (I::from_index(i), k.clone(), v))
     }
 }
 
@@ -152,10 +150,10 @@ impl<I: RegistryIdx, V> IndexMut<I> for Registry<I, V> {
     }
 }
 
-impl<'a, I: RegistryIdx, V> Index<Ident<&'a str>> for Registry<I, V> {
+impl<I: RegistryIdx, V> Index<Ident> for Registry<I, V> {
     type Output = V;
 
-    fn index(&self, index: Ident<&'a str>) -> &Self::Output {
+    fn index(&self, index: Ident) -> &Self::Output {
         if let Some(item) = self.items.get(index.as_str()) {
             item
         } else {
@@ -164,8 +162,8 @@ impl<'a, I: RegistryIdx, V> Index<Ident<&'a str>> for Registry<I, V> {
     }
 }
 
-impl<'a, I: RegistryIdx, V> IndexMut<Ident<&'a str>> for Registry<I, V> {
-    fn index_mut(&mut self, index: Ident<&'a str>) -> &mut Self::Output {
+impl<I: RegistryIdx, V> IndexMut<Ident> for Registry<I, V> {
+    fn index_mut(&mut self, index: Ident) -> &mut Self::Output {
         if let Some(item) = self.items.get_mut(index.as_str()) {
             item
         } else {
