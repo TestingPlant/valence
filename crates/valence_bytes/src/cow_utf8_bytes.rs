@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 
 use crate::Utf8Bytes;
@@ -18,6 +19,12 @@ impl<'a> CowUtf8Bytes<'a> {
 
     pub fn as_str(&self) -> &str {
         self
+    }
+}
+
+impl<'a> Display for CowUtf8Bytes<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(self.as_str(), f)
     }
 }
 
