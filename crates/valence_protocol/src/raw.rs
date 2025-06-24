@@ -2,8 +2,8 @@ use std::io::Write;
 use std::mem;
 
 use anyhow::ensure;
-use bytes::Bytes;
 use derive_more::{Deref, DerefMut, From, Into};
+use valence_bytes::{Bytes, CowBytes};
 
 use crate::{Bounded, DecodeBytes, Encode};
 
@@ -18,22 +18,22 @@ use crate::{Bounded, DecodeBytes, Encode};
 #[derive(
     Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Debug, Deref, DerefMut, From, Into,
 )]
-pub struct RawBytes(pub Bytes);
+pub struct RawBytes<'a>(pub CowBytes<'a>);
 
-impl Encode for RawBytes {
+impl Encode for RawBytes<'_> {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
         Ok(w.write_all(&self.0)?)
     }
 }
 
-impl DecodeBytes for RawBytes {
+impl DecodeBytes for RawBytes<'_> {
     fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
-        Ok(Self(mem::take(r)))
+        Ok(Self(mem::take(r).into()))
     }
 }
 
 /// Raises an encoding error if the inner slice is longer than `MAX_BYTES`.
-impl<const MAX_BYTES: usize> Encode for Bounded<RawBytes, MAX_BYTES> {
+impl<const MAX_BYTES: usize> Encode for Bounded<RawBytes<'_>, MAX_BYTES> {
     fn encode(&self, w: impl Write) -> anyhow::Result<()> {
         ensure!(
             self.len() <= MAX_BYTES,
@@ -47,7 +47,7 @@ impl<const MAX_BYTES: usize> Encode for Bounded<RawBytes, MAX_BYTES> {
 
 /// Raises a decoding error if the remainder of the input is larger than
 /// `MAX_BYTES`.
-impl<const MAX_BYTES: usize> DecodeBytes for Bounded<RawBytes, MAX_BYTES> {
+impl<const MAX_BYTES: usize> DecodeBytes for Bounded<RawBytes<'_>, MAX_BYTES> {
     fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self> {
         ensure!(
             r.len() <= MAX_BYTES,

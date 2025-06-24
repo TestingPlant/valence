@@ -8,9 +8,9 @@ use valence_ident::Ident;
 use crate::{Decode, DecodeBytes, DecodeBytesAuto, Encode, ItemStack, Packet, RawBytes};
 
 #[derive(Clone, Debug, Encode, DecodeBytes, Packet)]
-pub struct SynchronizeRecipesS2c {
+pub struct SynchronizeRecipesS2c<'a> {
     // TODO: this should be a Vec<Recipe<'a>>
-    pub recipes: RawBytes,
+    pub recipes: RawBytes<'a>,
 }
 
 #[derive(Clone, Debug, Encode)]

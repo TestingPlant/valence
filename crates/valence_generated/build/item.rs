@@ -140,7 +140,6 @@ pub fn build() -> anyhow::Result<TokenStream> {
     let chestplate = String::from("chestplate");
     let helmet = String::from("helmet");
 
-
     let item_kind_to_equippable_arms = items
         .iter()
         .map(|item| match &item.equippable {
