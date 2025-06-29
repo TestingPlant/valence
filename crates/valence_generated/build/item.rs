@@ -135,21 +135,16 @@ pub fn build() -> anyhow::Result<TokenStream> {
         })
         .collect::<TokenStream>();
 
-    let boots = String::from("boots");
-    let leggings = String::from("leggings");
-    let chestplate = String::from("chestplate");
-    let helmet = String::from("helmet");
-
     let item_kind_to_equippable_arms = items
         .iter()
         .map(|item| match &item.equippable {
             Some(slot) => {
                 let name = ident(item.name.to_pascal_case());
-                let slot = match slot {
-                    boots => quote! { EquipmentSlot::Boots },
-                    leggings => quote! { EquipmentSlot::Leggings },
-                    chestplate => quote! { EquipmentSlot::Chestplate },
-                    helmet => quote! { EquipmentSlot::Helmet },
+                let slot = match slot.as_str() {
+                    "boots" => quote! { EquipmentSlot::Boots },
+                    "leggings" => quote! { EquipmentSlot::Leggings },
+                    "chestplate" => quote! { EquipmentSlot::Chestplate },
+                    "helmet" => quote! { EquipmentSlot::Helmet },
                     _ => quote! { EquipmentSlot::Helmet },
                 };
                 quote! {
