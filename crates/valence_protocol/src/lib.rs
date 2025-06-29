@@ -264,6 +264,14 @@ pub trait Decode: DecodeBytes + Sized {
     /// Implementations of `Decode` are expected to shrink the slice from the
     /// front as bytes are read.
     fn decode(r: &mut &[u8]) -> anyhow::Result<Self>;
+
+    /// Same as [`Decode::decode`], but instead of modifying the slice
+    /// parameter, this returns both the decoded object and the number of
+    /// bytes read
+    fn decode_and_len<T: Decode>(mut slice: &[u8]) -> anyhow::Result<(T, usize)> {
+        let orig_len = slice.len();
+        T::decode(&mut slice).map(|decoded| (decoded, orig_len - slice.len()))
+    }
 }
 
 pub trait DecodeBytes: Sized {
@@ -272,6 +280,20 @@ pub trait DecodeBytes: Sized {
     /// Implementations of `Decode` are expected to shrink the slice from the
     /// front as bytes are read.
     fn decode_bytes(r: &mut Bytes) -> anyhow::Result<Self>;
+
+    /// Reads this object from an owned `&[u8]`. This function may allocate a
+    /// [`bytes::Bytes`] if needed.
+    ///
+    /// On success, this will return the decoded object and the number of bytes
+    /// read.
+    fn decode_from_owned<T>(r: T) -> anyhow::Result<(Self, usize)>
+    where
+        T: AsRef<[u8]> + Send + 'static,
+    {
+        let mut bytes = Bytes::from_owner(r);
+        let orig_len = bytes.len();
+        Self::decode_bytes(&mut bytes).map(|decoded| (decoded, orig_len - bytes.len()))
+    }
 }
 
 /// Implement [`DecodeBytes`] on a type that already impleemnts [`Decode`]
@@ -280,6 +302,13 @@ macro_rules! impl_decode_bytes_auto {
         impl $crate::DecodeBytes for $t {
             fn decode_bytes(r: &mut $crate::__private::Bytes) -> $crate::__private::Result<Self> {
                 $crate::decode_bytes_auto(r)
+            }
+
+            fn decode_from_owned<T>(r: T) -> anyhow::Result<(Self, usize)>
+            where
+                T: AsRef<[u8]> + Send + 'static,
+            {
+                <Self as $crate::Decode>::decode_and_len(r.as_ref())
             }
         }
     };

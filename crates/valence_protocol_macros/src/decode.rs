@@ -328,6 +328,10 @@ pub(super) fn derive_decode_bytes_auto(item: TokenStream) -> Result<TokenStream>
             fn decode_bytes(r: &mut ::valence_protocol::__private::Bytes) -> ::valence_protocol::__private::Result<Self> {
                 ::valence_protocol::__private::decode_bytes_auto(r)
             }
+
+            fn decode_from_owned<T>(r: T) -> ::anyhow::Result<(Self, usize)> where T: ::std::convert::AsRef<[u8]> + ::std::marker::Send + 'static {
+                <Self as ::valence_protocol::__private::Decode>::decode_and_len(r.as_ref())
+            }
         }
     })
 }
